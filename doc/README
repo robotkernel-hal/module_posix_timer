@@ -1,2 +1,9 @@
-interface canopen protocol
+module posix timer
+
+1. configuration
+
+config:
+    interval: 0.001
+    signo: 36
+    direct_mode: True
 
