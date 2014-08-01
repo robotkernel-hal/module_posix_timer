@@ -6,7 +6,7 @@
 #ifndef __MODULE_POSIX_TIMER_H__
 #define __MODULE_POSIX_TIMER_H__
 
-#include "module_intf.h"
+#include "robotkernel/module_intf.h"
 
 #define MODNAME "[module_posix_timer] "
 

@@ -3,10 +3,10 @@
  * $Id$
  */
 
-#include "modules/posix_timer/module_posix_timer.h"
-#include "kernel.h"
-#include "runnable.h"
-#include "trigger_base.h"
+#include "module_posix_timer.h"
+#include "robotkernel/kernel.h"
+#include "robotkernel/runnable.h"
+#include "robotkernel/trigger_base.h"
 #include "config.h"
 #include <stdlib.h>
 #include <string.h>
