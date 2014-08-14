@@ -26,7 +26,8 @@ requires_version 0.2.43
 
 defines
 module_posix_timer_base: %(dirname %(dirname %(CURDIR)))
-module_posix_timer_libdir: %(module_posix_timer_base)/lib/$(ARCH)
+module_posix_timer_base_type: %(ifexists "%(module_posix_timer_base)/lib/libmodule_posix_timer.so", "local_install", "rmpm_release")
+module_posix_timer_libdir: %(ifeq "%(module_posix_timer_base_type)", "local_install", "%(module_posix_timer_base)/lib", "%(module_posix_timer_base)/lib/$(ARCH)")
 
 ifndef rk_modules: rk_modules: ""
 rk_modules: %(rk_modules):%(module_posix_timer_libdir)
