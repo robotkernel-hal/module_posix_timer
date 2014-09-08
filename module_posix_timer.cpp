@@ -7,6 +7,7 @@
 #include "robotkernel/kernel.h"
 #include "robotkernel/runnable.h"
 #include "robotkernel/trigger_base.h"
+#include "robotkernel/helpers.h"
 #include "config.h"
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,49 @@
 #include <pthread.h>
 
 #include "yaml-cpp/yaml.h"
+
+/**
+ * set_normalized_timespec - set timespec sec and nsec parts and normalize
+ *
+ * @ts:		pointer to timespec variable to be set
+ * @sec:	seconds to set
+ * @nsec:	nanoseconds to set
+ *
+ * Set seconds and nanoseconds field of a timespec variable and
+ * normalize to the timespec storage format
+ *
+ * Note: The tv_nsec part is always in the range of
+ *	0 <= tv_nsec < NSEC_PER_SEC
+ * For negative values only the tv_sec field is negative !
+ */
+#define NSEC_PER_SEC 1000000000
+void set_normalized_timespec(struct timespec *ts, time_t sec, int64_t nsec)
+{
+	while (nsec >= NSEC_PER_SEC) {
+		/*
+		 * The following asm() prevents the compiler from
+		 * optimising this loop into a modulo operation. See
+		 * also __iter_div_u64_rem() in include/linux/time.h
+		 */
+		asm("" : "+rm"(nsec));
+		nsec -= NSEC_PER_SEC;
+		++sec;
+	}
+	while (nsec < 0) {
+		asm("" : "+rm"(nsec));
+		nsec += NSEC_PER_SEC;
+		--sec;
+	}
+	ts->tv_sec = sec;
+	ts->tv_nsec = nsec;
+}
+
+inline struct timespec timespec_sub(struct timespec a, struct timespec b) {
+    struct timespec ret;
+    set_normalized_timespec(&ret, a.tv_sec - b.tv_sec, a.tv_nsec - b.tv_nsec);
+
+    return ret;
+}
 
 using namespace std;
 using namespace robotkernel;
@@ -40,8 +84,12 @@ public:
     int _signo;             //! signal number
     string _name;           //! posix timer name
     module_state_t _state;  //! module state
-    bool _direct_mode;
     timer_t _timer_id; 
+
+    enum {
+        posix_timer_mode_nanosleep,
+        posix_timer_mode_timer,
+    } _mode;
 
     //! default construction
     /*!
@@ -70,18 +118,12 @@ public:
     //! handler function called if thread is running
     void run();
 
-    //! signal handler
-    static void timer_handler(int signum, siginfo_t *si, void *uc) { 
-        posix_timer *t = (posix_timer *)si->si_value.sival_ptr;
+    //! handler function for nanosleep mode
+    void run_nanosleep();
 
-        if (signum == t->_signo) {
-            if (t->_direct_mode)
-                t->trigger_modules();
-            else
-                pthread_cond_broadcast(&t->_sync_cond);
-        }
-    } 
-        
+    //! handler function for timer mode
+    void run_timer();
+
     pthread_mutex_t _sync_lock;    
     pthread_cond_t _sync_cond;
     struct sigaction _old; 
@@ -96,13 +138,17 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
     _name = string(name);    
     _interval = node["interval"].to<double>();
     _signo = node["signo"].to<int>();
-    _direct_mode = true;
+    _signo = SIGRTMIN;
     _timer_id = NULL;
+    _mode = posix_timer_mode_timer;
 
-    if (node.FindValue("direct_mode"))
-        _direct_mode = node["direct_mode"].to<bool>();
-    else
-        pt_log(_name, info, "direct_mode not specified, assuming true!\n");
+    if (node.FindValue("mode")) {
+        if (node["mode"].to<string>() == string("nanosleep"))
+            _mode = posix_timer_mode_nanosleep;
+        else if (node["mode"].to<string>() == string("timer"))
+            _mode = posix_timer_mode_timer;
+    } else 
+        pt_log(_name, info, "mode not specified, assuming timer mode!\n");
 
     // set state to init
     _state = module_state_init;
@@ -114,9 +160,7 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
 
 //! destrcution
 posix_timer::~posix_timer() {
-    if (!_direct_mode)
-        // stop running thread
-        stop();
+    stop();
 
     pthread_mutex_destroy(&_sync_lock);
     pthread_cond_destroy(&_sync_cond);
@@ -124,18 +168,82 @@ posix_timer::~posix_timer() {
 
 //! handler function called if thread is running
 void posix_timer::run() {
-    pt_log(_name, info, "handler running with pid %d\n", pthread_self());
+    if (_mode == posix_timer_mode_nanosleep)
+        return run_nanosleep();
+
+    return run_timer();
+}
+    
+//! handler function for nanosleep mode
+void posix_timer::run_nanosleep() {
+    pt_log(_name, info, "nanosleep handler running with pid %d\n", getpid());
+            
+
+    struct timespec ts_now;
+    clock_gettime(CLOCK_REALTIME, &ts_now);
 
     while (_running) {
-        struct timespec ts;
-        clock_gettime(CLOCK_REALTIME, &ts);
-        ts.tv_sec += 1;
+        struct timespec ts = { 1, 0 }, ts_diff;
+        timespec_add(&ts_now, (int)(_interval), (_interval - (int)_interval)*1E9);
 
-        pthread_mutex_lock(&_sync_lock);
-        int ret = pthread_cond_timedwait(&_sync_cond, &_sync_lock, &ts);
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts_diff = timespec_sub(ts_now, ts);
+
+        nanosleep(&ts_diff, NULL);
+        
+        for (cb_list_t::iterator it = trigger_cbs.begin();
+                it != trigger_cbs.end(); ++it) {
+            it->cb(it->hdl);
+        }
+    }
+
+    pt_log(_name, info, "nanosleep handler stopped\n");
+}
+
+//! handler function for timer mode
+void posix_timer::run_timer() {
+    pt_log(_name, info, "timer handler running with pid %d\n", getpid());
+            
+    sigset_t set;
+    if (sigemptyset (&set) == -1)
+        perror ("sigemptyset");
+
+    if (sigaddset (&set, _signo) == -1)
+        perror ("sigaddset");
+
+    /* set up timer to send out signal */
+    struct sigevent se;
+    memset(&se, 0, sizeof(se));
+    se.sigev_notify = SIGEV_SIGNAL;
+    se.sigev_signo = _signo;
+
+    if (timer_create(CLOCK_REALTIME, &se, &_timer_id) == -1) {
+        pt_log(_name, error, "ERROR timer_create: %s\n",
+                strerror(errno));
+    }
+
+    struct itimerspec value, value_old; 
+    value.it_value.tv_sec = (int)(_interval);
+    value.it_value.tv_nsec = (_interval-value.it_value.tv_sec)*1E9;
+    value.it_interval.tv_sec = value.it_value.tv_sec;
+    value.it_interval.tv_nsec = value.it_value.tv_nsec;
+
+    if (timer_settime(_timer_id, 0, &value, &value_old) == -1) {
+        pt_log(_name, error, "ERROR timer_settime: %s\n",
+                strerror(errno));
+    }
+
+    while (_running) {
+        struct timespec ts = { 1, 0 };
+        siginfo_t si;
+
+        int ret = sigtimedwait(&set, &si, &ts);
 
         if (ret == -1) {
-            pthread_mutex_unlock(&_sync_lock);
+            if (errno == EAGAIN)
+                    klog(info, "sigtimedwait timed out\n");
+            if (errno == EINVAL)
+                    klog(info, "sigtimedwait einval\n");
             continue;
         }
 
@@ -143,11 +251,24 @@ void posix_timer::run() {
                 it != trigger_cbs.end(); ++it) {
             it->cb(it->hdl);
         }
-            
-        pthread_mutex_unlock(&_sync_lock);
+    }
+    
+    if (_timer_id) {
+        struct itimerspec value; 
+        value.it_value.tv_sec = 0;
+        value.it_value.tv_nsec = 0;
+        value.it_interval.tv_sec = 0;
+        value.it_interval.tv_nsec = 0;
+
+        if (timer_settime(_timer_id, 0, &value, NULL) == -1) {
+            pt_log(_name, error, "ERROR timer_settime: %s\n",
+                    strerror(errno));
+        }
+
+        timer_delete(_timer_id);
     }
 
-    pt_log(_name, info, "handler stopped\n");
+    pt_log(_name, info, "timer handler stopped\n");
 }
 
 //! set module state machine to defined state
@@ -166,64 +287,14 @@ int posix_timer::set_state(module_state_t state) {
         case module_state_init:
         case module_state_preop:
         case module_state_safeop:
-            if (!_direct_mode)
-                stop();
-    
-            if (_timer_id) {
-                sigaction(_signo, &_old, NULL);
-
-                struct itimerspec value; 
-                value.it_value.tv_sec = 0;
-                value.it_value.tv_nsec = 0;
-                value.it_interval.tv_sec = 0;
-                value.it_interval.tv_nsec = 0;
-
-                if (timer_settime(_timer_id, 0, &value, NULL) == -1) {
-                    pt_log(_name, error, "ERROR timer_settime: %s\n",
-                            strerror(errno));
-                }
-            
-                timer_delete(_timer_id);
-            }
-            
+            stop();
             break;
         case module_state_op: {
             if (_state < module_state_safeop)
                 // invalid state transition
                 return -1;
 
-            /* set up signal handler for timer signal */
-            struct sigaction act; 
-            sigfillset(&act.sa_mask); 
-            act.sa_flags = SA_SIGINFO;
-            act.sa_sigaction = timer_handler;
-            sigaction(_signo, &act, &_old);
-
-            /* set up timer to send out signal */
-            struct sigevent se;
-            memset(&se, 0, sizeof(se));
-            se.sigev_notify = SIGEV_SIGNAL;
-            se.sigev_signo = _signo;
-            se.sigev_value.sival_ptr = this;
-
-            if (timer_create(CLOCK_REALTIME, &se, &_timer_id) == -1) {
-                pt_log(_name, error, "ERROR timer_create: %s\n",
-                        strerror(errno));
-            }
-
-            struct itimerspec value, value_old; 
-            value.it_value.tv_sec = (int)(_interval);
-            value.it_value.tv_nsec = (_interval-value.it_value.tv_sec)*1E9;
-            value.it_interval.tv_sec = value.it_value.tv_sec;
-            value.it_interval.tv_nsec = value.it_value.tv_nsec;
-
-            if (timer_settime(_timer_id, 0, &value, &value_old) == -1) {
-                pt_log(_name, error, "ERROR timer_settime: %s\n",
-                        strerror(errno));
-            }
-
-            if (!_direct_mode)
-                start();
+            start();
             break;
         }
         default:
