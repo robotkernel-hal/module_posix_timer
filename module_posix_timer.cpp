@@ -191,10 +191,7 @@ void posix_timer::run_nanosleep() {
 
         nanosleep(&ts_diff, NULL);
         
-        for (cb_list_t::iterator it = trigger_cbs.begin();
-                it != trigger_cbs.end(); ++it) {
-            it->cb(it->hdl);
-        }
+        trigger_modules();
     }
 
     pt_log(_name, info, "nanosleep handler stopped\n");
@@ -247,10 +244,7 @@ void posix_timer::run_timer() {
             continue;
         }
 
-        for (cb_list_t::iterator it = trigger_cbs.begin();
-                it != trigger_cbs.end(); ++it) {
-            it->cb(it->hdl);
-        }
+        trigger_modules();
     }
     
     if (_timer_id) {
