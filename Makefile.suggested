@@ -105,3 +105,6 @@ install: build
 local-release: build
 	cat $(SRC_DIR)/robotkernel.pt | sed -e "s/ARCHS.*=.*$$/ARCHS = sled11-x86-gcc4.x/" > .my_robotkernel.pt
 	reltool --local ./install --pt-file .my_robotkernel.pt --yes
+
+release: build_all
+	reltool --domain robotkernel 
