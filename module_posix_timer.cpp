@@ -137,22 +137,24 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
     : runnable(node) {
     _name = string(name);    
     _interval = node["interval"].to<double>();
-    _signo = node["signo"].to<int>();
     _signo = SIGRTMIN;
     _timer_id = NULL;
     _mode = posix_timer_mode_timer;
-
+    
     if (node.FindValue("mode")) {
-        if (node["mode"].to<string>() == string("nanosleep"))
-            _mode = posix_timer_mode_nanosleep;
-        else if (node["mode"].to<string>() == string("timer"))
-            _mode = posix_timer_mode_timer;
+	if (node["mode"].to<string>() == string("nanosleep"))
+	    _mode = posix_timer_mode_nanosleep;
+	else if (node["mode"].to<string>() == string("timer"))
+	    _mode = posix_timer_mode_timer;
     } else 
-        pt_log(_name, info, "mode not specified, assuming timer mode!\n");
+	pt_log(_name, info, "mode not specified, assuming timer mode!\n");
 
+    if (node.FindValue("signo"))
+	_signo = node["signo"].to<int>();
+    
     // set state to init
     _state = module_state_init;
-
+    
     // create ipc structures
     pthread_mutex_init(&_sync_lock, NULL);
     pthread_cond_init(&_sync_cond, NULL);
