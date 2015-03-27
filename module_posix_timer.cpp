@@ -36,23 +36,23 @@
 #define NSEC_PER_SEC 1000000000
 void set_normalized_timespec(struct timespec *ts, time_t sec, int64_t nsec)
 {
-	while (nsec >= NSEC_PER_SEC) {
-		/*
-		 * The following asm() prevents the compiler from
-		 * optimising this loop into a modulo operation. See
-		 * also __iter_div_u64_rem() in include/linux/time.h
-		 */
-		asm("" : "+rm"(nsec));
-		nsec -= NSEC_PER_SEC;
-		++sec;
-	}
-	while (nsec < 0) {
-		asm("" : "+rm"(nsec));
-		nsec += NSEC_PER_SEC;
-		--sec;
-	}
-	ts->tv_sec = sec;
-	ts->tv_nsec = nsec;
+    while (nsec >= NSEC_PER_SEC) {
+        /*
+         * The following asm() prevents the compiler from
+         * optimising this loop into a modulo operation. See
+         * also __iter_div_u64_rem() in include/linux/time.h
+         */
+        asm("" : "+rm"(nsec));
+        nsec -= NSEC_PER_SEC;
+        ++sec;
+    }
+    while (nsec < 0) {
+        asm("" : "+rm"(nsec));
+        nsec += NSEC_PER_SEC;
+        --sec;
+    }
+    ts->tv_sec = sec;
+    ts->tv_nsec = nsec;
 }
 
 inline struct timespec timespec_sub(struct timespec a, struct timespec b) {
@@ -79,54 +79,54 @@ void pt_log(std::string mod_name, robotkernel::loglevel lvl, const char *format,
 typedef std::list<set_trigger_cb_t> cb_list_t;
 
 class posix_timer : public runnable, public trigger_base {
-public:
-    double _interval;       //! posix timer cyclic interval 
-    int _signo;             //! signal number
-    string _name;           //! posix timer name
-    module_state_t _state;  //! module state
-    timer_t _timer_id; 
+    public:
+        double _interval;       //! posix timer cyclic interval 
+        int _signo;             //! signal number
+        string _name;           //! posix timer name
+        module_state_t _state;  //! module state
+        timer_t _timer_id; 
 
-    enum {
-        posix_timer_mode_nanosleep,
-        posix_timer_mode_timer,
-    } _mode;
+        enum {
+            posix_timer_mode_nanosleep,
+            posix_timer_mode_timer,
+        } _mode;
 
-    //! default construction
-    /*!
-     * \param node yaml configuration node
-     */
-    posix_timer(const char *name, const YAML::Node& node);
-    
-    //! destrcution
-    ~posix_timer();
+        //! default construction
+        /*!
+         * \param node yaml configuration node
+         */
+        posix_timer(const char *name, const YAML::Node& node);
 
-    //! set module state machine to defined state
-    /*!
-      \param state requested state
-      \return success or failure
-      */
-    int set_state(module_state_t state);
+        //! destrcution
+        ~posix_timer();
 
-    //! send a request to module
-    /*! 
-      \param reqcode request code
-      \param ptr pointer to request structure
-      \return success or failure
-      */
-    int request(int reqcode, void* ptr);
+        //! set module state machine to defined state
+        /*!
+          \param state requested state
+          \return success or failure
+          */
+        int set_state(module_state_t state);
 
-    //! handler function called if thread is running
-    void run();
+        //! send a request to module
+        /*! 
+          \param reqcode request code
+          \param ptr pointer to request structure
+          \return success or failure
+          */
+        int request(int reqcode, void* ptr);
 
-    //! handler function for nanosleep mode
-    void run_nanosleep();
+        //! handler function called if thread is running
+        void run();
 
-    //! handler function for timer mode
-    void run_timer();
+        //! handler function for nanosleep mode
+        void run_nanosleep();
 
-    pthread_mutex_t _sync_lock;    
-    pthread_cond_t _sync_cond;
-    struct sigaction _old; 
+        //! handler function for timer mode
+        void run_timer();
+
+        pthread_mutex_t _sync_lock;    
+        pthread_cond_t _sync_cond;
+        struct sigaction _old; 
 };
 
 //! default construction
@@ -140,21 +140,21 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
     _signo = SIGRTMIN;
     _timer_id = NULL;
     _mode = posix_timer_mode_timer;
-    
+
     if (node.FindValue("mode")) {
-	if (node["mode"].to<string>() == string("nanosleep"))
-	    _mode = posix_timer_mode_nanosleep;
-	else if (node["mode"].to<string>() == string("timer"))
-	    _mode = posix_timer_mode_timer;
+        if (node["mode"].to<string>() == string("nanosleep"))
+            _mode = posix_timer_mode_nanosleep;
+        else if (node["mode"].to<string>() == string("timer"))
+            _mode = posix_timer_mode_timer;
     } else 
-	pt_log(_name, info, "mode not specified, assuming timer mode!\n");
+        pt_log(_name, info, "mode not specified, assuming timer mode!\n");
 
     if (node.FindValue("signo"))
-	_signo = node["signo"].to<int>();
-    
+        _signo = node["signo"].to<int>();
+
     // set state to init
     _state = module_state_init;
-    
+
     // create ipc structures
     pthread_mutex_init(&_sync_lock, NULL);
     pthread_cond_init(&_sync_cond, NULL);
@@ -175,11 +175,11 @@ void posix_timer::run() {
 
     return run_timer();
 }
-    
+
 //! handler function for nanosleep mode
 void posix_timer::run_nanosleep() {
     pt_log(_name, info, "nanosleep handler running with pid %d\n", getpid());
-            
+
 
     struct timespec ts_now;
     clock_gettime(CLOCK_REALTIME, &ts_now);
@@ -192,7 +192,7 @@ void posix_timer::run_nanosleep() {
         ts_diff = timespec_sub(ts_now, ts);
 
         nanosleep(&ts_diff, NULL);
-        
+
         trigger_modules();
     }
 
@@ -202,7 +202,7 @@ void posix_timer::run_nanosleep() {
 //! handler function for timer mode
 void posix_timer::run_timer() {
     pt_log(_name, info, "timer handler running with pid %d\n", getpid());
-            
+
     sigset_t set;
     if (sigemptyset (&set) == -1)
         perror ("sigemptyset");
@@ -240,15 +240,15 @@ void posix_timer::run_timer() {
 
         if (ret == -1) {
             if (errno == EAGAIN)
-                    klog(info, "sigtimedwait timed out\n");
+                klog(info, "sigtimedwait timed out\n");
             if (errno == EINVAL)
-                    klog(info, "sigtimedwait einval\n");
+                klog(info, "sigtimedwait einval\n");
             continue;
         }
 
         trigger_modules();
     }
-    
+
     if (_timer_id) {
         struct itimerspec value; 
         value.it_value.tv_sec = 0;
@@ -276,7 +276,7 @@ int posix_timer::set_state(module_state_t state) {
     if (state == _state) {
         return 0;
     }
-    
+
     pt_log(_name, info, "state %s requested\n", state_to_string(state));
 
     switch (state) {
@@ -300,7 +300,7 @@ int posix_timer::set_state(module_state_t state) {
 
     // set actual state 
     _state = state;
-    
+
     pt_log(_name, info, "state %s reached\n", state_to_string(_state));
 
     return 0;
@@ -312,7 +312,7 @@ int posix_timer::set_state(module_state_t state) {
   \param reqcode request code
   \param ptr pointer to request structure
   \return success or failure
- */
+  */
 int posix_timer::request(int reqcode, void* ptr) {
     int ret = 0;
 
@@ -339,6 +339,9 @@ int posix_timer::request(int reqcode, void* ptr) {
 
 #ifdef __cplusplus
 extern "C" {
+#if 0
+}
+#endif
 #endif
 
 //! configures module
@@ -355,7 +358,7 @@ MODULE_HANDLE mod_configure(const char* name, const char* config) {
     stringstream stream(config);
     YAML::Parser parser(stream);
     YAML::Node doc;
-    
+
     // parse yaml configuration string
     if (!parser.GetNextDocument(doc)) {
         pt_log(name, error, "ERROR parsing config file\n");
@@ -384,9 +387,9 @@ ErrorExit:
 
 //! unconfigure module
 /*!
-  \param hdl module handle
-  \return success or failure
-  */
+ * \param hdl module handle
+ * \return success or failure
+ */
 int mod_unconfigure(MODULE_HANDLE hdl) {
     // cast struct
     posix_timer* t = (posix_timer*)hdl;
@@ -398,10 +401,10 @@ int mod_unconfigure(MODULE_HANDLE hdl) {
 
 //! set module state machine to defined state
 /*!
-  \param hdl module handle
-  \param state requested state
-  \return success or failure
-  */
+ * \param hdl module handle
+ * \param state requested state
+ * \return success or failure
+ */
 int mod_set_state(MODULE_HANDLE hdl, module_state_t state) {
     // cast struct
     posix_timer* t = (posix_timer*)hdl;
@@ -410,9 +413,9 @@ int mod_set_state(MODULE_HANDLE hdl, module_state_t state) {
 
 //! get module state machine state
 /*!
-  \param hdl module handle
-  \return current state
-  */
+ * \param hdl module handle
+ * \return current state
+ */
 module_state_t mod_get_state(MODULE_HANDLE hdl) {
     // cast struct
     posix_timer* t = (posix_timer*)hdl;
@@ -421,10 +424,10 @@ module_state_t mod_get_state(MODULE_HANDLE hdl) {
 
 //! send a request to module
 /*! 
-  \param hdl module handle
-  \param reqcode request code
-  \param ptr pointer to request structure
-  \return success or failure
+ * \param hdl module handle
+ * \param reqcode request code
+ * \param ptr pointer to request structure
+ * \return success or failure
  */
 int mod_request(MODULE_HANDLE hdl, int reqcode, void* ptr) {
     // cast struct
