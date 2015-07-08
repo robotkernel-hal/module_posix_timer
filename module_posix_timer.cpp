@@ -66,7 +66,7 @@ using namespace std;
 using namespace robotkernel;
 
 //! log to kernel logging facility
-void pt_log(std::string mod_name, robotkernel::loglevel lvl, const char *format, ...) {
+void pt_log(robotkernel::loglevel lvl, std::string mod_name, const char *format, ...) {
     char buf[1024];
 
     // format argument list
@@ -147,7 +147,7 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
         else if (node["mode"].to<string>() == string("timer"))
             _mode = posix_timer_mode_timer;
     } else 
-        pt_log(_name, info, "mode not specified, assuming timer mode!\n");
+        pt_log(module_info, _name, "mode not specified, assuming timer mode!\n");
 
     if (node.FindValue("signo"))
         _signo = node["signo"].to<int>();
@@ -178,7 +178,7 @@ void posix_timer::run() {
 
 //! handler function for nanosleep mode
 void posix_timer::run_nanosleep() {
-    pt_log(_name, info, "nanosleep handler running with pid %d\n", getpid());
+    pt_log(module_info, _name, "nanosleep handler running with pid %d\n", getpid());
 
 
     struct timespec ts_now;
@@ -196,12 +196,12 @@ void posix_timer::run_nanosleep() {
         trigger_modules();
     }
 
-    pt_log(_name, info, "nanosleep handler stopped\n");
+    pt_log(module_info, _name, "nanosleep handler stopped\n");
 }
 
 //! handler function for timer mode
 void posix_timer::run_timer() {
-    pt_log(_name, info, "timer handler running with pid %d\n", getpid());
+    pt_log(module_info, _name, "timer handler running with pid %d\n", getpid());
 
     sigset_t set;
     if (sigemptyset (&set) == -1)
@@ -217,7 +217,7 @@ void posix_timer::run_timer() {
     se.sigev_signo = _signo;
 
     if (timer_create(CLOCK_REALTIME, &se, &_timer_id) == -1) {
-        pt_log(_name, error, "ERROR timer_create: %s\n",
+        pt_log(module_error, _name, "ERROR timer_create: %s\n",
                 strerror(errno));
     }
 
@@ -228,7 +228,7 @@ void posix_timer::run_timer() {
     value.it_interval.tv_nsec = value.it_value.tv_nsec;
 
     if (timer_settime(_timer_id, 0, &value, &value_old) == -1) {
-        pt_log(_name, error, "ERROR timer_settime: %s\n",
+        pt_log(module_error, _name, "ERROR timer_settime: %s\n",
                 strerror(errno));
     }
 
@@ -240,9 +240,9 @@ void posix_timer::run_timer() {
 
         if (ret == -1) {
             if (errno == EAGAIN)
-                klog(info, "sigtimedwait timed out\n");
+                klog(module_info, "sigtimedwait timed out\n");
             if (errno == EINVAL)
-                klog(info, "sigtimedwait einval\n");
+                klog(module_info, "sigtimedwait einval\n");
             continue;
         }
 
@@ -257,14 +257,14 @@ void posix_timer::run_timer() {
         value.it_interval.tv_nsec = 0;
 
         if (timer_settime(_timer_id, 0, &value, NULL) == -1) {
-            pt_log(_name, error, "ERROR timer_settime: %s\n",
+            pt_log(module_error, _name, "ERROR timer_settime: %s\n",
                     strerror(errno));
         }
 
         timer_delete(_timer_id);
     }
 
-    pt_log(_name, info, "timer handler stopped\n");
+    pt_log(module_info, _name, "timer handler stopped\n");
 }
 
 //! set module state machine to defined state
@@ -277,7 +277,7 @@ int posix_timer::set_state(module_state_t state) {
         return 0;
     }
 
-    pt_log(_name, info, "state %s requested\n", state_to_string(state));
+    pt_log(module_info, _name, "state %s requested\n", state_to_string(state));
 
     switch (state) {
         case module_state_init:
@@ -301,7 +301,7 @@ int posix_timer::set_state(module_state_t state) {
     // set actual state 
     _state = state;
 
-    pt_log(_name, info, "state %s reached\n", state_to_string(_state));
+    pt_log(module_info, _name, "state %s reached\n", state_to_string(_state));
 
     return 0;
 }
@@ -328,7 +328,7 @@ int posix_timer::request(int reqcode, void* ptr) {
             break;
         }
         default:
-            pt_log(_name, verbose, "not implemented request %d\n", reqcode);
+            pt_log(module_verbose, _name, "not implemented request %d\n", reqcode);
             ret = -1;
             break;
     }
@@ -351,8 +351,8 @@ extern "C" {
  * \return handle on success, NULL otherwise
  */
 MODULE_HANDLE mod_configure(const char* name, const char* config) {
-    pt_log(name, info, "build by: " BUILD_USER "@" BUILD_HOST "\n");
-    pt_log(name, info, "build date: " BUILD_DATE "\n");
+    pt_log(module_info, name, "build by: " BUILD_USER "@" BUILD_HOST "\n");
+    pt_log(module_info, name, "build date: " BUILD_DATE "\n");
 
     posix_timer *t = NULL;
     stringstream stream(config);
@@ -361,17 +361,17 @@ MODULE_HANDLE mod_configure(const char* name, const char* config) {
 
     // parse yaml configuration string
     if (!parser.GetNextDocument(doc)) {
-        pt_log(name, error, "ERROR parsing config file\n");
+        pt_log(module_error, name, "ERROR parsing config file\n");
         goto ErrorExit;
     }
 
     t = new posix_timer(name, doc);
     if (!t) {
-        pt_log(name, error, "ERROR cannot allocate memory");
+        pt_log(module_error, name, "ERROR cannot allocate memory");
         goto ErrorExit;
     }
 
-    pt_log(name, info, "configured signo %d, interval %f\n", 
+    pt_log(module_info, name, "configured signo %d, interval %f\n", 
             t->_signo, t->_interval);
 
     return (MODULE_HANDLE)t;
