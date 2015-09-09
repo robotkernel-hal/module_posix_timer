@@ -100,7 +100,7 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
         else if (node["mode"].to<string>() == string("timer"))
             mode = posix_timer_mode_timer;
     } else 
-        log(module_info, "mode not specified, assuming timer mode!\n");
+        log(info, "mode not specified, assuming timer mode!\n");
 
     // set state to init
     state = module_state_init;
@@ -128,7 +128,7 @@ void posix_timer::run() {
 
 //! handler function for nanosleep mode
 void posix_timer::run_nanosleep() {
-    log(module_info, "nanosleep handler running with pid %d\n", getpid());
+    log(info, "nanosleep handler running with pid %d\n", getpid());
 
 
     struct timespec ts_now;
@@ -146,19 +146,19 @@ void posix_timer::run_nanosleep() {
         trigger_modules();
     }
 
-    log(module_info, "nanosleep handler stopped\n");
+    log(info, "nanosleep handler stopped\n");
 }
 
 //! handler function for timer mode
 void posix_timer::run_timer() {
-    log(module_info, "timer handler running with pid %d\n", getpid());
+    log(info, "timer handler running with pid %d\n", getpid());
 
     sigset_t set;
     if (sigemptyset (&set) == -1)
-        log(module_error, "sigemptyset %s\n", strerror(errno));
+        log(error, "sigemptyset %s\n", strerror(errno));
 
     if (sigaddset (&set, signo) == -1)
-        log(module_error, "sigaddset %s\n", strerror(errno));
+        log(error, "sigaddset %s\n", strerror(errno));
 
     /* set up timer to send out signal */
     struct sigevent se;
@@ -167,7 +167,7 @@ void posix_timer::run_timer() {
     se.sigev_signo = signo;
 
     if (timer_create(CLOCK_REALTIME, &se, &timer_id) == -1)
-        log(module_error, "ERROR timer_create: %s\n", strerror(errno));
+        log(error, "ERROR timer_create: %s\n", strerror(errno));
 
     struct itimerspec value, value_old; 
     value.it_value.tv_sec = (int)(interval);
@@ -176,7 +176,7 @@ void posix_timer::run_timer() {
     value.it_interval.tv_nsec = value.it_value.tv_nsec;
 
     if (timer_settime(timer_id, 0, &value, &value_old) == -1)
-        log(module_error, "timer_settime %s\n", strerror(errno));
+        log(error, "timer_settime %s\n", strerror(errno));
 
     while (running()) {
         struct timespec ts = { 1, 0 };
@@ -186,9 +186,9 @@ void posix_timer::run_timer() {
 
         if (ret == -1) {
             if (errno == EAGAIN)
-                log(module_info, "sigtimedwait timed out\n");
+                log(info, "sigtimedwait timed out\n");
             if (errno == EINVAL)
-                log(module_info, "sigtimedwait einval\n");
+                log(info, "sigtimedwait einval\n");
             continue;
         }
 
@@ -203,13 +203,13 @@ void posix_timer::run_timer() {
         value.it_interval.tv_nsec = 0;
 
         if (timer_settime(timer_id, 0, &value, NULL) == -1)
-            log(module_error, "ERROR timer_settime: %s\n",
+            log(error, "ERROR timer_settime: %s\n",
                     strerror(errno));
 
         timer_delete(timer_id);
     }
 
-    log(module_info, "timer handler stopped\n");
+    log(info, "timer handler stopped\n");
 }
 
 //! set module state machine to defined state
@@ -222,7 +222,7 @@ int posix_timer::set_state(module_state_t state) {
         return 0;
     }
 
-    log(module_info, "state %s requested\n", state_to_string(state));
+    log(info, "state %s requested\n", state_to_string(state));
 
     switch (state) {
         case module_state_init:
@@ -246,7 +246,7 @@ int posix_timer::set_state(module_state_t state) {
     // set actual state 
     this->state = state;
 
-    log(module_info, "state %s reached\n", state_to_string(state));
+    log(info, "state %s reached\n", state_to_string(state));
 
     return 0;
 }

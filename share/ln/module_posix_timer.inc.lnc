@@ -1,31 +1,14 @@
 requires_version 0.2.43
 # this include file can be customized with the following defines:
-#   module_posix_timer_name
-#     (optional) process name
-#     defaults to robotkernel_gui
-#   module_posix_timer_node
-#     (optional) node name
-#     defaults to localhost
-#   module_posix_timer_arguments
-#     (optional) arguments
-#       --config path/to/config.rkc
-#       --verbose
-#       --quiet
 #   module_posix_timer_base
-#     (optional) path to robotkernel-base-directory
-#     e.g. /volume/software/common/packages/robotkernel/2.1.6
+#     (optional) path to module-posix-timer-base-directory
+#     e.g. /volume/software/common/packages/module_posix_timer/latest
 #     or to a local reltool path,
-#     or to a local install like: /home/schm_fl/workspace/robotkernel/build/sled11-x86-gcc4.x
+#     or to a local install like: /home/schm_fl/workspace/module_posix_timer/build/sled11-x86-gcc4.x
 #     defaults to rmpm structure
-#   module_posix_timer_library_path
-#     (optional) add custom library search paths
-#   libsercos
-#     (optional) add sercos library
-#   module_posix_timer_start_as
-#     (optional) su, if possible (e.g. root)
 
 defines
-module_posix_timer_base: %(dirname %(dirname %(CURDIR)))
+module_posix_timer_base: %(ifndef "module_posix_timer_base", %(dirname %(dirname %(CURDIR))))
 module_posix_timer_base_type: %(ifexists "%(module_posix_timer_base)/lib/libmodule_posix_timer.so", "local_install", "rmpm_release")
 module_posix_timer_libdir: %(ifeq "%(module_posix_timer_base_type)", "local_install", "%(module_posix_timer_base)/lib", "%(module_posix_timer_base)/lib/$(ARCH)")
 
