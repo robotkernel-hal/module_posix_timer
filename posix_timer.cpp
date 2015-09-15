@@ -88,22 +88,19 @@ using namespace module_posix_timer;
  * \param node yaml configuration node
  */
 posix_timer::posix_timer(const char* name, const YAML::Node& node) 
-    : runnable(node), module_base("module_posix_timer", name) {
+    : runnable(node), module_base("module_posix_timer", name, node) {
     interval = get_as<double>(node, "interval");
     signo    = get_as<int>(node, "signo", SIGRTMIN);
     timer_id = NULL;
     mode     = posix_timer_mode_timer;
 
-    if (node.FindValue("mode")) {
-        if (node["mode"].to<string>() == string("nanosleep"))
+    if (node["mode"]) {
+        if (node["mode"].as<string>() == string("nanosleep"))
             mode = posix_timer_mode_nanosleep;
-        else if (node["mode"].to<string>() == string("timer"))
+        else if (node["mode"].as<string>() == string("timer"))
             mode = posix_timer_mode_timer;
     } else 
         log(info, "mode not specified, assuming timer mode!\n");
-
-    // set state to init
-    state = module_state_init;
 
     // create ipc structures
     pthread_mutex_init(&sync_lock, NULL);
@@ -129,7 +126,6 @@ void posix_timer::run() {
 //! handler function for nanosleep mode
 void posix_timer::run_nanosleep() {
     log(info, "nanosleep handler running with pid %d\n", getpid());
-
 
     struct timespec ts_now;
     clock_gettime(CLOCK_REALTIME, &ts_now);
@@ -231,15 +227,20 @@ int posix_timer::set_state(module_state_t state) {
             stop();
             break;
         case module_state_op: {
-            if (this->state < module_state_safeop)
+            if (this->state < module_state_safeop) {
                 // invalid state transition
+                log(error, "state transition from %s to OP "
+                        "is invalid\n", state_to_string(state));
+
                 return -1;
+            }
 
             start();
             break;
         }
         default:
             // invalid state 
+            log(error, "invalid state %d requested\n", (int)state);
             return -1;
     }
 
@@ -260,7 +261,7 @@ int posix_timer::set_state(module_state_t state) {
   */
 int posix_timer::request(int reqcode, void* ptr) {
     int ret = 0;
-    if (trigger_base::request(reqcode, ptr))
+    if (trigger_base::request(reqcode, ptr) == 0)
         return 0;
 
     ret = -1;

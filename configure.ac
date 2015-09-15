@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([module_posix_timer], [3.2.0], [robert.burger@dlr.de])
+AC_INIT([module_posix_timer], [4.0.0], [robert.burger@dlr.de])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -50,6 +50,7 @@ if test "$rmpm_host" == "arm-angstrom-linux-gnueabi"; then
 fi
 AC_SUBST(ARCH_CFLAGS)
 
+# yaml-cpp 
 PKG_CHECK_MODULES([ROBOTKERNEL], [robotkernel], [], [
                     RMPM_CHECK_MODULES([ROBOTKERNEL], [robotkernel.robotkernel])
                    ])
