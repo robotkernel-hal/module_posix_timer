@@ -90,6 +90,7 @@ using namespace module_posix_timer;
 posix_timer::posix_timer(const char* name, const YAML::Node& node) 
     : runnable(node), module_base("module_posix_timer", name, node) {
     interval = get_as<double>(node, "interval");
+    shift    = 0;
     signo    = get_as<int>(node, "signo", SIGRTMIN);
     timer_id = NULL;
     mode     = posix_timer_mode_timer;
@@ -134,6 +135,11 @@ void posix_timer::run_nanosleep() {
         struct timespec ts = { 1, 0 }, ts_diff;
         timespec_add(&ts_now, (int)(interval), (interval - (int)interval)*1E9);
 
+        if (shift != 0) {
+            timespec_add(&ts_now, (int)(shift), (shift - (int)shift)*1E9);
+            shift = 0;
+        }
+
         clock_gettime(CLOCK_REALTIME, &ts);
         ts_diff = timespec_sub(ts_now, ts);
 
@@ -165,6 +171,8 @@ void posix_timer::run_timer() {
     if (timer_create(CLOCK_REALTIME, &se, &timer_id) == -1)
         log(error, "ERROR timer_create: %s\n", strerror(errno));
 
+    double old_interval = interval;
+
     struct itimerspec value, value_old; 
     value.it_value.tv_sec = (int)(interval);
     value.it_value.tv_nsec = (interval-value.it_value.tv_sec)*1E9;
@@ -186,6 +194,19 @@ void posix_timer::run_timer() {
             if (errno == EINVAL)
                 log(info, "sigtimedwait einval\n");
             continue;
+        }
+
+        if (old_interval != interval) {
+            // reload timer with new value
+            value.it_value.tv_sec = (int)(interval);
+            value.it_value.tv_nsec = (interval-value.it_value.tv_sec)*1E9;
+            value.it_interval.tv_sec = value.it_value.tv_sec;
+            value.it_interval.tv_nsec = value.it_value.tv_nsec;
+
+            if (timer_settime(timer_id, 0, &value, &value_old) == -1)
+                log(error, "timer_settime %s\n", strerror(errno));
+
+            old_interval = interval;
         }
 
         trigger_modules();
@@ -261,10 +282,31 @@ int posix_timer::set_state(module_state_t state) {
   */
 int posix_timer::request(int reqcode, void* ptr) {
     int ret = 0;
+
     if (trigger_base::request(reqcode, ptr) == 0)
         return 0;
 
-    ret = -1;
+    switch (reqcode) {
+        case MOD_REQUEST_GET_TRIGGER_INTERVAL: {
+            double *result = (double *)ptr;
+            *result = interval;
+            break;
+        }
+        case MOD_REQUEST_SET_TRIGGER_INTERVAL: {
+            double *value = (double *)ptr;
+            interval = *value;
+            break;
+        }
+        case MOD_REQUEST_SHIFT_NEXT_TRIGGER: {
+            double *value = (double *)ptr;
+            shift = *value;
+            break;
+        }
+        default:
+            ret = -1;
+            break;
+    }
+
     return ret;
 }
 

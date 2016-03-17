@@ -45,6 +45,7 @@ class posix_timer :
 
     public:
         double interval;        //!< posix timer cyclic interval 
+        double shift;           //!< next shift
         int signo;              //!< signal number
         timer_t timer_id;       //!< timer id
 
