@@ -302,6 +302,12 @@ int posix_timer::request(int reqcode, void* ptr) {
             shift = *value;
             break;
         }
+        case MOD_REQUEST_GET_PDIN: {
+            process_data_t *pd = (process_data_t *)ptr;
+            pd->pd = &interval;
+            pd->len = sizeof(interval) + sizeof(shift);
+            break;
+        }
         default:
             ret = -1;
             break;
