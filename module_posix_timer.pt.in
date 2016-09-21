@@ -1,9 +1,9 @@
 PTVERSION           = 2
 NAME                = @PACKAGE@
-VERSION             = @PACKAGE_VERSION@
+VERSION             = @VERSION@
 DESCRIPTION         = robotkernel posix timer module
 DOCUMENTATION       = https://rmintra01.robotic.dlr.de/wiki/Robotkernel/module_posix_timer
-MAINTAINER          = Robert Burger <robert.burger@dlr.de>
+MAINTAINER          = @MAINTAINER@
 ARCHS               = @ARCHS@
 
 [install]
