@@ -16,9 +16,8 @@ if test -n "$SOURCE_ENV"; then
    source $SOURCE_ENV
 fi
 
-m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
-
 # Checks for programs.
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_CXX
 AC_PROG_AWK
 AC_PROG_INSTALL
