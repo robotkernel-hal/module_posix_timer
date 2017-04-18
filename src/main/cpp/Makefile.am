@@ -5,8 +5,8 @@ libdir = $(prefix)/lib
 lib_LTLIBRARIES = libmodule_posix_timer.la
 
 libmodule_posix_timer_la_SOURCES  = posix_timer.cpp
-libmodule_posix_timer_la_CPPFLAGS = -std=c++11 -Wall -I$(srcdir) -I$(builddir) \
-                                    @ROBOTKERNEL_CFLAGS@ @LIBSTRING_UTIL_CFLAGS@ @YAML_CPP_RMC_CFLAGS@
+libmodule_posix_timer_la_CPPFLAGS = -Wall -I$(srcdir) -I$(builddir) \
+                                    @ROBOTKERNEL_CFLAGS@ @LIBSTRING_UTIL_CFLAGS@ @YAML_CPP_CFLAGS@
 libmodule_posix_timer_la_LDFLAGS  = -Wall -release $(PACKAGE_VERSION)
 
 install-exec-hook:
