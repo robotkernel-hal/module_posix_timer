@@ -27,7 +27,7 @@ m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig'
 PKG_CHECK_MODULES([YAML_CPP], [yaml-cpp])
 PKG_CHECK_MODULES([LIBSTRING_UTIL], [libstring_util])
 PKG_CHECK_MODULES([ROBOTKERNEL], [robotkernel])
-PKG_CHECK_MODULES([SERVICE_PROVIDER_PROCESS_DATA_INPECTION], [service_provider_process_data_inspection])
+PKG_CHECK_MODULES([SERVICE_PROVIDER_PROCESS_DATA_INSPECTION], [service_provider_process_data_inspection])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h])
