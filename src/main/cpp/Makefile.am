@@ -1,7 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4 -I scripts/m4
 
-libdir = $(prefix)/lib
-
 lib_LTLIBRARIES = libmodule_posix_timer.la
 
 libmodule_posix_timer_la_SOURCES  = posix_timer.cpp
