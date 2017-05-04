@@ -1,4 +1,4 @@
-ACLOCAL_AMFLAGS = -I m4 -I scripts/m4
+ACLOCAL_AMFLAGS = -I m4
 
 lib_LTLIBRARIES = libmodule_posix_timer.la
 
