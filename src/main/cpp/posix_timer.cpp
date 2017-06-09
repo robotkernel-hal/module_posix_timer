@@ -1,8 +1,6 @@
 //! robotkernel module posix timer
 /*!
- * author: Robert Burger
- *
- * $Id$
+ * author: Robert Burger <robert.burger@dlr.de>
  */
 
 /*
@@ -33,21 +31,22 @@
 #include <pthread.h>
 
 #include "yaml-cpp/yaml.h"
+#include <string_util/string_util.h>
 
-MODULE_DEF(module_posix_timer, module_posix_timer::posix_timer)
+MODULE_DEF(module_posix_timer, module_posix_timer::posix_timer);
 
 /**
  * set_normalized_timespec - set timespec sec and nsec parts and normalize
  *
- * @ts:		pointer to timespec variable to be set
- * @sec:	seconds to set
- * @nsec:	nanoseconds to set
+ * @ts:     pointer to timespec variable to be set
+ * @sec:    seconds to set
+ * @nsec:   nanoseconds to set
  *
  * Set seconds and nanoseconds field of a timespec variable and
  * normalize to the timespec storage format
  *
  * Note: The tv_nsec part is always in the range of
- *	0 <= tv_nsec < NSEC_PER_SEC
+ *  0 <= tv_nsec < NSEC_PER_SEC
  * For negative values only the tv_sec field is negative !
  */
 #define NSEC_PER_SEC 1000000000
@@ -82,13 +81,19 @@ inline struct timespec timespec_sub(struct timespec a, struct timespec b) {
 using namespace std;
 using namespace robotkernel;
 using namespace module_posix_timer;
+using namespace string_util;
+
+        
+posix_timer_trigger::posix_timer_trigger(posix_timer *parent) 
+    : trigger_base(format_string("%s.trigger", parent->name.c_str()))
+{}
 
 //! default construction
 /*!
  * \param node yaml configuration node
  */
 posix_timer::posix_timer(const char* name, const YAML::Node& node) 
-    : runnable(node), module_base("module_posix_timer", name, node) {
+    : runnable(node), module_base("module_posix_timer", name, node) {        
     interval = get_as<double>(node, "interval");
     shift    = 0;
     signo    = get_as<int>(node, "signo", SIGRTMIN);
@@ -103,17 +108,18 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
     } else 
         log(info, "mode not specified, assuming timer mode!\n");
 
-    // create ipc structures
-    pthread_mutex_init(&sync_lock, NULL);
-    pthread_cond_init(&sync_cond, NULL);
+    // create and register named trigger device
+    t_dev = make_shared<posix_timer_trigger>(this);
+    kernel::get_instance()->add_trigger_device(t_dev);
 };
 
 //! destrcution
 posix_timer::~posix_timer() {
+    // delete named trigger device
+    kernel::get_instance()->remove_trigger_device(t_dev);
+    t_dev.reset();
+    
     stop();
-
-    pthread_mutex_destroy(&sync_lock);
-    pthread_cond_destroy(&sync_cond);
 }
 
 //! handler function called if thread is running
@@ -145,7 +151,7 @@ void posix_timer::run_nanosleep() {
 
         nanosleep(&ts_diff, NULL);
 
-        trigger_modules();
+        t_dev->trigger_modules();
     }
 
     log(info, "nanosleep handler stopped\n");
@@ -209,7 +215,7 @@ void posix_timer::run_timer() {
             old_interval = interval;
         }
 
-        trigger_modules();
+        t_dev->trigger_modules();
     }
 
     if (timer_id) {
@@ -299,48 +305,5 @@ int posix_timer::set_state(module_state_t state) {
     }
 
     return (this->state = state);
-}
-
-//! send a request to module
-/*! 
-  \param hdl module handle
-  \param reqcode request code
-  \param ptr pointer to request structure
-  \return success or failure
-  */
-int posix_timer::request(int reqcode, void* ptr) {
-    int ret = 0;
-
-    if (trigger_base::request(reqcode, ptr) == 0)
-        return 0;
-
-    switch (reqcode) {
-        case MOD_REQUEST_GET_TRIGGER_INTERVAL: {
-            double *result = (double *)ptr;
-            *result = interval;
-            break;
-        }
-        case MOD_REQUEST_SET_TRIGGER_INTERVAL: {
-            double *value = (double *)ptr;
-            interval = *value;
-            break;
-        }
-        case MOD_REQUEST_SHIFT_NEXT_TRIGGER: {
-            double *value = (double *)ptr;
-            shift = *value;
-            break;
-        }
-        case MOD_REQUEST_GET_PDIN: {
-            process_data_t *pd = (process_data_t *)ptr;
-            pd->pd = &interval;
-            pd->len = sizeof(interval) + sizeof(shift);
-            break;
-        }
-        default:
-            ret = -1;
-            break;
-    }
-
-    return ret;
 }
 

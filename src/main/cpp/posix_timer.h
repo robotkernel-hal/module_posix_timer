@@ -1,8 +1,6 @@
 //! robotkernel module posix timer
 /*!
- * author: Robert Burger
- *
- * $Id$
+ * author: Robert Burger <robert.burger@dlr.de>
  */
 
 /*
@@ -32,10 +30,20 @@
 #include "robotkernel/trigger_base.h"
 
 namespace module_posix_timer {
+#ifdef EMACS
+}
+#endif
+
+// forward declaration
+class posix_timer;
+
+class posix_timer_trigger : public robotkernel::trigger_base {
+    public:
+        posix_timer_trigger(posix_timer *parent);
+};
 
 class posix_timer : 
     public robotkernel::runnable, 
-    public robotkernel::trigger_base, 
     public robotkernel::module_base {
 
     private:
@@ -44,10 +52,11 @@ class posix_timer :
         posix_timer& operator=(const posix_timer&);  //!< prevent assignment
 
     public:
-        double interval;        //!< posix timer cyclic interval 
-        double shift;           //!< next shift
-        int signo;              //!< signal number
-        timer_t timer_id;       //!< timer id
+        std::shared_ptr<posix_timer_trigger> t_dev;  //!< trigger device
+        double interval;                             //!< posix timer cyclic interval 
+        double shift;                                //!< next shift
+        int signo;                                   //!< signal number
+        timer_t timer_id;                            //!< timer id
 
         enum posix_timer_mode {
             posix_timer_mode_nanosleep,
@@ -70,14 +79,6 @@ class posix_timer :
           */
         int set_state(module_state_t state);
 
-        //! send a request to module
-        /*! 
-          \param reqcode request code
-          \param ptr pointer to request structure
-          \return success or failure
-          */
-        int request(int reqcode, void* ptr);
-
         //! handler function called if thread is running
         void run();
 
@@ -86,10 +87,6 @@ class posix_timer :
 
         //! handler function for timer mode
         void run_timer();
-
-        pthread_mutex_t sync_lock;    
-        pthread_cond_t sync_cond;
-        struct sigaction old; 
 };
 
 };
