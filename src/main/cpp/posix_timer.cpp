@@ -84,9 +84,20 @@ using namespace module_posix_timer;
 using namespace string_util;
 
         
-posix_timer_trigger::posix_timer_trigger(posix_timer *parent, uint64_t rate) 
+posix_timer_trigger::posix_timer_trigger(posix_timer *parent, double rate) 
     : trigger_base(format_string("%s.trigger", parent->name.c_str()), rate)
 {}
+
+//! set rate of trigger device
+/*!
+ * set the rate of the current trigger
+ * overload in derived trigger class
+ *
+ * \param new_rate new trigger rate to set
+ */
+void posix_timer_trigger::set_rate(double new_rate) {
+    rate = new_rate;
+}
 
 //! default construction
 /*!
@@ -109,7 +120,7 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
         log(info, "mode not specified, assuming timer mode!\n");
 
     // create and register named trigger device
-    t_dev = make_shared<posix_timer_trigger>(this, (uint64_t)(1.f/interval));
+    t_dev = make_shared<posix_timer_trigger>(this, 1.f/interval);
     kernel::get_instance()->add_trigger_device(t_dev);
 };
 
@@ -138,13 +149,10 @@ void posix_timer::run_nanosleep() {
     clock_gettime(CLOCK_REALTIME, &ts_now);
 
     while (running()) {
+        interval = 1. / t_dev->get_rate();
+
         struct timespec ts = { 1, 0 }, ts_diff;
         timespec_add(&ts_now, (int)(interval), (interval - (int)interval)*1E9);
-
-        if (shift != 0) {
-            timespec_add(&ts_now, (int)(shift), (shift - (int)shift)*1E9);
-            shift = 0;
-        }
 
         clock_gettime(CLOCK_REALTIME, &ts);
         ts_diff = timespec_sub(ts_now, ts);

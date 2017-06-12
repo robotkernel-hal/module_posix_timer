@@ -39,7 +39,16 @@ class posix_timer;
 
 class posix_timer_trigger : public robotkernel::trigger_base {
     public:
-        posix_timer_trigger(posix_timer *parent, uint64_t rate);
+        posix_timer_trigger(posix_timer *parent, double rate);
+
+        //! set rate of trigger device
+        /*!
+         * set the rate of the current trigger
+         * overload in derived trigger class
+         *
+         * \param new_rate new trigger rate to set
+         */
+        void set_rate(double new_rate);
 };
 
 class posix_timer : 
