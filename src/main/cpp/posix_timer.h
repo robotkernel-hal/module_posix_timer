@@ -63,7 +63,6 @@ class posix_timer :
     public:
         std::shared_ptr<posix_timer_trigger> t_dev;  //!< trigger device
         double interval;                             //!< posix timer cyclic interval 
-        double shift;                                //!< next shift
         int signo;                                   //!< signal number
         timer_t timer_id;                            //!< timer id
 
@@ -71,6 +70,9 @@ class posix_timer :
             posix_timer_mode_nanosleep,
             posix_timer_mode_timer,
         } mode;
+
+        // named process data
+        robotkernel::kernel::sp_process_data_t pdin;
 
         //! default construction
         /*!

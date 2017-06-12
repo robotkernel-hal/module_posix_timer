@@ -106,7 +106,6 @@ void posix_timer_trigger::set_rate(double new_rate) {
 posix_timer::posix_timer(const char* name, const YAML::Node& node) 
     : runnable(node), module_base("module_posix_timer", name, node) {        
     interval = get_as<double>(node, "interval");
-    shift    = 0;
     signo    = get_as<int>(node, "signo", SIGRTMIN);
     timer_id = NULL;
     mode     = posix_timer_mode_timer;
@@ -119,6 +118,10 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
     } else 
         log(info, "mode not specified, assuming timer mode!\n");
 
+    string pdin_desc = "double: interval\n";
+    pdin = make_shared<robotkernel::process_data>(
+            sizeof(double), name, string("pd.in"), pdin_desc);
+            
     // create and register named trigger device
     t_dev = make_shared<posix_timer_trigger>(this, 1.f/interval);
     kernel::get_instance()->add_trigger_device(t_dev);
@@ -131,6 +134,7 @@ posix_timer::~posix_timer() {
     t_dev.reset();
     
     stop();
+    pdin.reset();
 }
 
 //! handler function called if thread is running
@@ -150,6 +154,9 @@ void posix_timer::run_nanosleep() {
 
     while (running()) {
         interval = 1. / t_dev->get_rate();
+        auto& buf = pdin->get_write_buffer();
+        ((double *)&buf[0])[0] = interval;
+        pdin->swap_buffers();
 
         struct timespec ts = { 1, 0 }, ts_diff;
         timespec_add(&ts_now, (int)(interval), (interval - (int)interval)*1E9);
@@ -251,6 +258,8 @@ void posix_timer::run_timer() {
 int posix_timer::set_state(module_state_t state) {
     log(info, "state %s requested\n", state_to_string(state));
 
+    kernel& k = *kernel::get_instance();
+
     // get transition
     uint32_t transition = GEN_STATE(this->state, state);
 
@@ -267,6 +276,8 @@ int posix_timer::set_state(module_state_t state) {
         case safeop_2_boot:
             // ====> stop receiving measurements
             stop();
+
+            k.remove_process_data(pdin);
 
             if (state == module_state_preop)
                 break;
@@ -296,6 +307,8 @@ int posix_timer::set_state(module_state_t state) {
         case preop_2_safeop:
             // ====> start receiving measurements
             start();
+
+            k.add_process_data(pdin);
 
             if (state == module_state_safeop)
                 break;
