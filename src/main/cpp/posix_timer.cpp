@@ -84,8 +84,8 @@ using namespace module_posix_timer;
 using namespace string_util;
 
         
-posix_timer_trigger::posix_timer_trigger(posix_timer *parent) 
-    : trigger_base(format_string("%s.trigger", parent->name.c_str()))
+posix_timer_trigger::posix_timer_trigger(posix_timer *parent, uint64_t rate) 
+    : trigger_base(format_string("%s.trigger", parent->name.c_str()), rate)
 {}
 
 //! default construction
@@ -109,7 +109,7 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
         log(info, "mode not specified, assuming timer mode!\n");
 
     // create and register named trigger device
-    t_dev = make_shared<posix_timer_trigger>(this);
+    t_dev = make_shared<posix_timer_trigger>(this, (uint64_t)(1.f/interval));
     kernel::get_instance()->add_trigger_device(t_dev);
 };
 

@@ -39,7 +39,7 @@ class posix_timer;
 
 class posix_timer_trigger : public robotkernel::trigger_base {
     public:
-        posix_timer_trigger(posix_timer *parent);
+        posix_timer_trigger(posix_timer *parent, uint64_t rate);
 };
 
 class posix_timer : 
