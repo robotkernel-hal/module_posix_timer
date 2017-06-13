@@ -83,28 +83,15 @@ using namespace robotkernel;
 using namespace module_posix_timer;
 using namespace string_util;
 
-        
-posix_timer_trigger::posix_timer_trigger(posix_timer *parent, double rate) 
-    : trigger_base(format_string("%s.trigger", parent->name.c_str()), rate)
-{}
-
-//! set rate of trigger device
-/*!
- * set the rate of the current trigger
- * overload in derived trigger class
- *
- * \param new_rate new trigger rate to set
- */
-void posix_timer_trigger::set_rate(double new_rate) {
-    rate = new_rate;
-}
 
 //! default construction
 /*!
  * \param node yaml configuration node
  */
 posix_timer::posix_timer(const char* name, const YAML::Node& node) 
-    : runnable(node), module_base("module_posix_timer", name, node) {        
+    : trigger_device(format_string("%s.trigger", name), 1./get_as<double>(node, "interval")),
+      runnable(node), module_base("module_posix_timer", name, node) 
+{
     interval = get_as<double>(node, "interval");
     signo    = get_as<int>(node, "signo", SIGRTMIN);
     timer_id = NULL;
@@ -121,20 +108,23 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
     string pdin_desc = "double: interval\n";
     pdin = make_shared<robotkernel::process_data>(
             sizeof(double), name, string("pd.in"), pdin_desc);
-            
-    // create and register named trigger device
-    t_dev = make_shared<posix_timer_trigger>(this, 1.f/interval);
-    kernel::get_instance()->add_trigger_device(t_dev);
 };
 
 //! destrcution
 posix_timer::~posix_timer() {
-    // delete named trigger device
-    kernel::get_instance()->remove_trigger_device(t_dev);
-    t_dev.reset();
-    
     stop();
     pdin.reset();
+}
+
+//! set rate of trigger device
+/*!
+ * set the rate of the current trigger
+ * overload in derived trigger class
+ *
+ * \param new_rate new trigger rate to set
+ */
+void posix_timer::set_rate(double new_rate) {
+    rate = new_rate;
 }
 
 //! handler function called if thread is running
@@ -153,7 +143,7 @@ void posix_timer::run_nanosleep() {
     clock_gettime(CLOCK_REALTIME, &ts_now);
 
     while (running()) {
-        interval = 1. / t_dev->get_rate();
+        interval = 1. / get_rate();
         auto& buf = pdin->get_write_buffer();
         ((double *)&buf[0])[0] = interval;
         pdin->swap_buffers();
@@ -166,7 +156,7 @@ void posix_timer::run_nanosleep() {
 
         nanosleep(&ts_diff, NULL);
 
-        t_dev->trigger_modules();
+        trigger_modules();
     }
 
     log(info, "nanosleep handler stopped\n");
@@ -230,7 +220,7 @@ void posix_timer::run_timer() {
             old_interval = interval;
         }
 
-        t_dev->trigger_modules();
+        trigger_modules();
     }
 
     if (timer_id) {
@@ -278,6 +268,7 @@ int posix_timer::set_state(module_state_t state) {
             stop();
 
             k.remove_process_data(pdin);
+            k.remove_trigger_device(posix_timer::shared_from_this());
 
             if (state == module_state_preop)
                 break;
@@ -308,6 +299,8 @@ int posix_timer::set_state(module_state_t state) {
             // ====> start receiving measurements
             start();
 
+            // register named trigger device
+            k.add_trigger_device(posix_timer::shared_from_this());
             k.add_process_data(pdin);
 
             if (state == module_state_safeop)

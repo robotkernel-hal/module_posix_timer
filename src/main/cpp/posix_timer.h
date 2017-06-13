@@ -35,23 +35,9 @@ namespace module_posix_timer {
 #endif
 
 // forward declaration
-class posix_timer;
-
-class posix_timer_trigger : public robotkernel::trigger_base {
-    public:
-        posix_timer_trigger(posix_timer *parent, double rate);
-
-        //! set rate of trigger device
-        /*!
-         * set the rate of the current trigger
-         * overload in derived trigger class
-         *
-         * \param new_rate new trigger rate to set
-         */
-        void set_rate(double new_rate);
-};
-
 class posix_timer : 
+    public std::enable_shared_from_this<posix_timer>,
+    public robotkernel::trigger_device,
     public robotkernel::runnable, 
     public robotkernel::module_base {
 
@@ -61,7 +47,6 @@ class posix_timer :
         posix_timer& operator=(const posix_timer&);  //!< prevent assignment
 
     public:
-        std::shared_ptr<posix_timer_trigger> t_dev;  //!< trigger device
         double interval;                             //!< posix timer cyclic interval 
         int signo;                                   //!< signal number
         timer_t timer_id;                            //!< timer id
@@ -82,6 +67,15 @@ class posix_timer :
 
         //! destrcution
         ~posix_timer();
+        
+        //! set rate of trigger device
+        /*!
+         * set the rate of the current trigger
+         * overload in derived trigger class
+         *
+         * \param new_rate new trigger rate to set
+         */
+        void set_rate(double new_rate);
 
         //! set module state machine to defined state
         /*!
