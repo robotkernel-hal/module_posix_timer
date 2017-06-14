@@ -39,8 +39,8 @@ class posix_timer :
     public std::enable_shared_from_this<posix_timer>,
     public robotkernel::trigger_device,
     public robotkernel::runnable, 
-    public robotkernel::module_base {
-
+    public robotkernel::module_base 
+{
     private:
         posix_timer();                               //!< prevent default cons
         posix_timer(const posix_timer&);             //!< prevent copy-construction
@@ -56,8 +56,7 @@ class posix_timer :
             posix_timer_mode_timer,
         } mode;
 
-        // named process data
-        robotkernel::sp_process_data_t pdin;
+        robotkernel::sp_process_data_t pdin;         //!< named process data
 
         //! default construction
         /*!
@@ -67,7 +66,7 @@ class posix_timer :
 
         //! destrcution
         ~posix_timer();
-        
+
         //! set rate of trigger device
         /*!
          * set the rate of the current trigger
@@ -94,6 +93,9 @@ class posix_timer :
         void run_timer();
 };
 
+#ifdef EMACS
+{
+#endif
 };
 
 #endif // __MODULE_POSIX_TIMER_H__
