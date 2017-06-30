@@ -89,7 +89,7 @@ using namespace string_util;
  * \param node yaml configuration node
  */
 posix_timer::posix_timer(const char* name, const YAML::Node& node) 
-    : trigger_device(format_string("%s.trigger", name), 1./get_as<double>(node, "interval")),
+    : trigger_device(name, "posix_timer", 1./get_as<double>(node, "interval")),
       runnable(node), module_base("module_posix_timer", name, node) 
 {
     interval = get_as<double>(node, "interval");
@@ -106,8 +106,8 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node)
         log(info, "mode not specified, assuming timer mode!\n");
 
     string pdin_desc = "double: interval\n";
-    pdin = make_shared<robotkernel::process_data>(
-            sizeof(double), name, string("pd.in"), pdin_desc);
+    pdin = make_shared<robotkernel::process_data_device>(
+            sizeof(double), name, string("inputs"), pdin_desc);
 };
 
 //! destrcution
@@ -246,9 +246,8 @@ void posix_timer::run_timer() {
   \return success or failure
   */
 int posix_timer::set_state(module_state_t state) {
-    log(info, "state %s requested\n", state_to_string(state));
-
     kernel& k = *kernel::get_instance();
+    log(info, "state %s requested\n", state_to_string(state));
 
     // get transition
     uint32_t transition = GEN_STATE(this->state, state);
@@ -267,14 +266,16 @@ int posix_timer::set_state(module_state_t state) {
             // ====> stop receiving measurements
             stop();
 
-            k.remove_process_data(pdin);
-            k.remove_trigger_device(posix_timer::shared_from_this());
-
             if (state == module_state_preop)
                 break;
         case preop_2_init:
         case preop_2_boot:
             // ====> deinit devices
+            
+            // register devices (trigger, process_data)
+            k.remove_device(shared_from_this());
+            k.remove_device(pdin);
+
         case init_2_init:
             // ====> re-/open ethercat device
             if (state == module_state_init)
@@ -292,16 +293,17 @@ int posix_timer::set_state(module_state_t state) {
         case init_2_safeop:
         case init_2_preop:
             // ====> initial devices            
+            
+            // register devices (trigger, process_data)
+            k.add_device(shared_from_this());
+            k.add_device(pdin);
+
             if (state == module_state_preop)
                 break;
         case preop_2_op:
         case preop_2_safeop:
             // ====> start receiving measurements
             start();
-
-            // register named trigger device
-            k.add_trigger_device(posix_timer::shared_from_this());
-            k.add_process_data(pdin);
 
             if (state == module_state_safeop)
                 break;

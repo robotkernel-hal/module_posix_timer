@@ -56,7 +56,7 @@ class posix_timer :
             posix_timer_mode_timer,
         } mode;
 
-        robotkernel::sp_process_data_t pdin;         //!< named process data
+        robotkernel::sp_process_data_device_t pdin;         //!< named process data
 
         //! default construction
         /*!
