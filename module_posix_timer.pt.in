@@ -8,6 +8,5 @@ ARCHS               = @ARCHS@
 
 [install]
 build/${ARCH}/install/lib => lib/${ARCH}
-doc/ => doc/
 share/ => share/
 
