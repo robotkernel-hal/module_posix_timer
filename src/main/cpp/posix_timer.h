@@ -37,7 +37,7 @@ namespace module_posix_timer {
 // forward declaration
 class posix_timer : 
     public std::enable_shared_from_this<posix_timer>,
-    public robotkernel::trigger_device,
+    public robotkernel::trigger,
     public robotkernel::runnable, 
     public robotkernel::module_base 
 {
@@ -56,7 +56,7 @@ class posix_timer :
             posix_timer_mode_timer,
         } mode;
 
-        robotkernel::sp_process_data_device_t pdin;         //!< named process data
+        robotkernel::sp_process_data_t pdin;         //!< named process data
 
         //! default construction
         /*!
