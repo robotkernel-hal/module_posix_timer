@@ -144,9 +144,7 @@ void posix_timer::run_nanosleep() {
 
     while (running()) {
         interval = 1. / get_rate();
-        auto& buf = pdin->get_write_buffer();
-        ((double *)&buf[0])[0] = interval;
-        pdin->swap_buffers();
+        pdin->write((uint8_t *)&interval, sizeof(double));
 
         struct timespec ts = { 1, 0 }, ts_diff;
         timespec_add(&ts_now, (int)(interval), (interval - (int)interval)*1E9);
