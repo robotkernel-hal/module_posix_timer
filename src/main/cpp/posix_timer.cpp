@@ -88,14 +88,15 @@ using namespace string_util;
 /*!
  * \param node yaml configuration node
  */
-posix_timer::posix_timer(const char* name, const YAML::Node& node) 
-    : robotkernel::trigger(name, "posix_timer", 1./get_as<double>(node, "interval")),
-      runnable(node), module_base("module_posix_timer", name, node) 
+posix_timer::posix_timer(const char* name, const YAML::Node& node) : 
+    robotkernel::trigger(name, "posix_timer", 1./get_as<double>(node, "interval")),
+    runnable(node), module_base("module_posix_timer", name, node) 
 {
-    interval = get_as<double>(node, "interval");
-    signo    = get_as<int>(node, "signo", SIGRTMIN);
-    timer_id = NULL;
-    mode     = posix_timer_mode_timer;
+    interval    = get_as<double>(node, "interval");
+    signo       = get_as<int>(node, "signo", SIGRTMIN);
+    timer_id    = NULL;
+    mode        = posix_timer_mode_timer;
+    thread_name = name;
 
     if (node["mode"]) {
         if (node["mode"].as<string>() == string("nanosleep"))
