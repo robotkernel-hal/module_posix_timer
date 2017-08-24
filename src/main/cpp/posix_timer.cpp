@@ -107,7 +107,7 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node) :
         log(info, "mode not specified, assuming timer mode!\n");
 
     string pdin_desc = "double: interval\n";
-    pdin = make_shared<robotkernel::process_data>(
+    pdin = make_shared<robotkernel::triple_buffer>(
             sizeof(double), name, string("inputs"), pdin_desc);
 };
 
@@ -145,7 +145,7 @@ void posix_timer::run_nanosleep() {
 
     while (running()) {
         interval = 1. / get_rate();
-        pdin->write((uint8_t *)&interval, sizeof(double));
+        pdin->write(0, (uint8_t *)&interval, sizeof(double));
 
         struct timespec ts = { 1, 0 }, ts_diff;
         timespec_add(&ts_now, (int)(interval), (interval - (int)interval)*1E9);
