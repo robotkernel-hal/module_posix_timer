@@ -38,7 +38,7 @@ AC_CHECK_FUNCS([strdup])
 # Checks for library functions.
 AC_CHECK_LIB(dl, dlopen)
 
-AC_CONFIG_FILES([Makefile src/main/cpp/Makefile module_posix_timer.pc])
+AC_CONFIG_FILES([Makefile src/main/cpp/Makefile module_posix_timer.pc share/ln/module_posix_timer.inc.lnc])
 
 AC_OUTPUT
 
