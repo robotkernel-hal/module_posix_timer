@@ -9,6 +9,7 @@ AC_INIT(
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
+AC_CANONICAL_TARGET
 
 # Checks for programs.
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -38,7 +39,26 @@ AC_CHECK_FUNCS([strdup])
 # Checks for library functions.
 AC_CHECK_LIB(dl, dlopen)
 
-AC_CONFIG_FILES([Makefile src/main/cpp/Makefile module_posix_timer.pc share/ln/module_posix_timer.inc.lnc])
+# Platform specific setup
+# Check for which host we are on and setup a few things
+# specifically based on the host
+case $target in
+    *arm* )
+        AC_DEFINE([ARCH_ARM], [], [Defined if the target CPU is arm])
+        ;;
+    *amd64* )
+        AC_DEFINE([ARCH_INTEL], [], [Defined if the target CPU is intel])
+        ;;
+    *i?86* )
+        AC_DEFINE([ARCH_INTEL], [], [Defined if the target CPU is intel])
+        ;;
+    *x86_64* )
+        AC_DEFINE([ARCH_INTEL], [], [Defined if the target CPU is intel])
+        ;;
+esac
+
+AC_CONFIG_FILES([Makefile src/main/cpp/Makefile module_posix_timer.pc])
+AC_CONFIG_FILES([share/ln/module_posix_timer.inc.lnc], [cp share/ln/module_posix_timer.inc.lnc ${ac_abs_top_srcdir}/share/ln/])
 
 AC_OUTPUT
 
