@@ -25,64 +25,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <iostream>
 #include <semaphore.h>
 #include <signal.h>
 #include <pthread.h>
+
+#include <iostream>
+#include <chrono>
 
 #include "yaml-cpp/yaml.h"
 #include <string_util/string_util.h>
 
 MODULE_DEF(module_posix_timer, module_posix_timer::posix_timer);
 
-/**
- * set_normalized_timespec - set timespec sec and nsec parts and normalize
- *
- * @ts:     pointer to timespec variable to be set
- * @sec:    seconds to set
- * @nsec:   nanoseconds to set
- *
- * Set seconds and nanoseconds field of a timespec variable and
- * normalize to the timespec storage format
- *
- * Note: The tv_nsec part is always in the range of
- *  0 <= tv_nsec < NSEC_PER_SEC
- * For negative values only the tv_sec field is negative !
- */
-#define NSEC_PER_SEC 1000000000
-void set_normalized_timespec(struct timespec *ts, time_t sec, int64_t nsec)
-{
-    while (nsec >= NSEC_PER_SEC) {
-        /*
-         * The following asm() prevents the compiler from
-         * optimising this loop into a modulo operation. See
-         * also __iter_div_u64_rem() in include/linux/time.h
-         */
-        asm("" : "+rm"(nsec));
-        nsec -= NSEC_PER_SEC;
-        ++sec;
-    }
-    while (nsec < 0) {
-        asm("" : "+rm"(nsec));
-        nsec += NSEC_PER_SEC;
-        --sec;
-    }
-    ts->tv_sec = sec;
-    ts->tv_nsec = nsec;
-}
-
-inline struct timespec timespec_sub(struct timespec a, struct timespec b) {
-    struct timespec ret;
-    set_normalized_timespec(&ret, a.tv_sec - b.tv_sec, a.tv_nsec - b.tv_nsec);
-
-    return ret;
-}
-
 using namespace std;
 using namespace robotkernel;
 using namespace module_posix_timer;
 using namespace string_util;
-
 
 //! default construction
 /*!
@@ -140,21 +98,12 @@ void posix_timer::run() {
 void posix_timer::run_nanosleep() {
     log(info, "nanosleep handler running with pid %d\n", getpid());
 
-    struct timespec ts_now;
-    clock_gettime(CLOCK_REALTIME, &ts_now);
+    std::chrono::time_point< std::chrono::system_clock,
+                         std::chrono::duration< double > > now = std::chrono::system_clock::now();
 
     while (running()) {
-        interval = 1. / get_rate();
-        pdin->write(0, (uint8_t *)&interval, sizeof(double));
-
-        struct timespec ts = { 1, 0 }, ts_diff;
-        timespec_add(&ts_now, (int)(interval), (interval - (int)interval)*1E9);
-
-        clock_gettime(CLOCK_REALTIME, &ts);
-        ts_diff = timespec_sub(ts_now, ts);
-
-        nanosleep(&ts_diff, NULL);
-
+        now += std::chrono::duration<double>(1. / get_rate());
+        std::this_thread::sleep_until(now);
         trigger_modules();
     }
 
