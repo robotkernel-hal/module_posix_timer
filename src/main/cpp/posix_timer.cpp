@@ -97,13 +97,15 @@ void posix_timer::run() {
 //! handler function for nanosleep mode
 void posix_timer::run_nanosleep() {
     log(info, "nanosleep handler running with pid %d\n", getpid());
-
-    std::chrono::time_point< std::chrono::system_clock,
-                         std::chrono::duration< double > > now = std::chrono::system_clock::now();
+    auto now = std::chrono::high_resolution_clock::now();
 
     while (running()) {
-        now += std::chrono::duration<double>(1. / get_rate());
-        std::this_thread::sleep_until(now);
+        now += std::chrono::nanoseconds((long)(1000000000. / get_rate()));
+
+        do {
+            std::this_thread::sleep_until(now);
+        } while (now > std::chrono::high_resolution_clock::now());
+
         trigger_modules();
     }
 
