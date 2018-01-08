@@ -23,4 +23,4 @@ This example loads the posix timer module and sets up a nanosleep trigger with 3
              mode: nanosleep                                                         
              prio: 90 
              affinity: 1                                                             
-         power_up: op             
+         power_up: op                            
