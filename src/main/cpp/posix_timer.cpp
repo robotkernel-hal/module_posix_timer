@@ -63,16 +63,23 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node) :
             mode = posix_timer_mode_timer;
     } else 
         log(info, "mode not specified, assuming timer mode!\n");
-
-    string pdin_desc = "double: interval\n";
-    pdin = make_shared<robotkernel::triple_buffer>(
-            sizeof(double), name, string("inputs"), pdin_desc);
 };
 
 //! destrcution
 posix_timer::~posix_timer() {
     stop();
-    pdin.reset();
+    pdin->reset_provider(provider_hash);
+    pdin = nullptr;
+}
+        
+// additional module init stuff
+void posix_timer::init() {
+    string pdin_desc = "- double: interval\n";
+    pdin = make_shared<robotkernel::triple_buffer>(
+            sizeof(double), name, string("inputs"), pdin_desc, 
+            format_string("%s.posix_timer.trigger", name));
+
+    provider_hash = pdin->set_provider(shared_from_this());
 }
 
 //! set rate of trigger device
@@ -101,6 +108,8 @@ void posix_timer::run_nanosleep() {
 
     while (running()) {
         now += std::chrono::nanoseconds((long)(1000000000. / get_rate()));
+        interval = 1. / get_rate();
+        pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
 
         do {
             std::this_thread::sleep_until(now);
@@ -115,7 +124,7 @@ void posix_timer::run_nanosleep() {
 //! handler function for timer mode
 void posix_timer::run_timer() {
     log(info, "timer handler running with pid %d\n", getpid());
-
+    
     sigset_t set;
     if (sigemptyset (&set) == -1)
         log(error, "sigemptyset %s\n", strerror(errno));
@@ -133,6 +142,7 @@ void posix_timer::run_timer() {
         log(error, "ERROR timer_create: %s\n", strerror(errno));
 
     double old_interval = interval;
+    pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
 
     struct itimerspec value, value_old; 
     value.it_value.tv_sec = (int)(interval);

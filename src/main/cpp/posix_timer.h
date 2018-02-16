@@ -57,6 +57,7 @@ class posix_timer :
         } mode;
 
         robotkernel::sp_process_data_t pdin;         //!< named process data
+        size_t provider_hash;
 
         //! default construction
         /*!
@@ -66,6 +67,9 @@ class posix_timer :
 
         //! destrcution
         ~posix_timer();
+
+        //! additional module init stuff
+        void init();
 
         //! set rate of trigger device
         /*!
