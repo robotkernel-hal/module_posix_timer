@@ -37,6 +37,7 @@ namespace module_posix_timer {
 // forward declaration
 class posix_timer : 
     public std::enable_shared_from_this<posix_timer>,
+    public robotkernel::pd_provider,
     public robotkernel::trigger,
     public robotkernel::runnable, 
     public robotkernel::module_base 

@@ -47,7 +47,8 @@ using namespace string_util;
  * \param node yaml configuration node
  */
 posix_timer::posix_timer(const char* name, const YAML::Node& node) : 
-    robotkernel::trigger(name, "posix_timer", 1./get_as<double>(node, "interval")),
+    pd_provider(name),
+    trigger(name, "posix_timer", 1./get_as<double>(node, "interval")),
     runnable(node), module_base("module_posix_timer", name, node) 
 {
     interval    = get_as<double>(node, "interval");
@@ -77,7 +78,7 @@ void posix_timer::init() {
     string pdin_desc = "- double: interval\n";
     pdin = make_shared<robotkernel::triple_buffer>(
             sizeof(double), name, string("inputs"), pdin_desc, 
-            format_string("%s.posix_timer.trigger", name));
+            format_string("%s.posix_timer.trigger", name.c_str()));
 
     provider_hash = pdin->set_provider(shared_from_this());
 }
