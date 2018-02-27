@@ -58,12 +58,12 @@ This mode creates a timer with timer_create. It configures the timer and connect
 This module registers a trigger device to the robotkernel with the following naming schemeː
 
  <name>.posix_timer.trigger
-  
+
 = Process data device =
 
 The module also provides a cyclic process. It contains the actual timer interval.
 
- <name>.inputs.ps
+ <name>.inputs.pd
 
 [[Category:Robotkernel-5|posix timer]]
 
