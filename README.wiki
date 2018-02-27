@@ -59,5 +59,11 @@ This module registers a trigger device to the robotkernel with the following nam
 
  <name>.posix_timer.trigger
   
+= Process data device =
+
+The module also provides a cyclic process. It contains the actual timer interval.
+
+ <name>.inputs.ps
+
 [[Category:Robotkernel-5|posix timer]]
 
