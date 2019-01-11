@@ -1,10 +1,10 @@
 from conans import ConanFile, AutoToolsBuildEnvironment
-
+import re
 
 class MainProject(ConanFile):
     name = "module_posix_timer"
     license = "GPLv3"
-    url = "https://rmc-github.robotic.dlr.de/robotkernel/module_posix_timer"
+    url = f"https://rmc-github.robotic.dlr.de/robotkernel/{name}"
     description = "module_posix_timer is used to generate deterministic triggers for other modules."
     settings = "os", "compiler", "build_type", "arch"
     scm = {
@@ -15,12 +15,27 @@ class MainProject(ConanFile):
     }
 
     generators = "pkg_config"
-    requires = "robotkernel/[~=5.0]@common/unstable"
+    requires = "robotkernel/5.0.4-rc@robotkernel/unstable", "service_provider_process_data_inspection/5.0.1-rc@robotkernel/unstable", "yaml-cpp/0.6.1@jbeder/stable"
+
+    def source(self):
+        filedata = None
+        filename = "project.properties"
+        with open(filename, 'r') as f:
+            filedata = f.read()
+        with open(filename, 'w') as f:
+            f.write(re.sub("VERSION *=.*[^\n]", f"VERSION = {self.version}", filedata))
 
     def build(self):
         self.run("autoreconf -if")
         autotools = AutoToolsBuildEnvironment(self)
-        autotools.configure(configure_dir=".", host=self.settings.arch )
+        autotools.libs=[]
+        autotools.include_paths=[]
+        autotools.library_paths=[]
+        if self.settings.build_type == "Debug":
+            autotools.flags = ["-O0", "-g"]
+        else:
+            autotools.flags = ["-O3"]
+        autotools.configure(configure_dir=".")
         autotools.make()
 
     def package(self):

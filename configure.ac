@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT(
-    [module_posix_timer], 
+    [module_posix_timer],
 	m4_esyscmd_s([cat project.properties | grep VERSION    | cut -d'=' -f2 | xargs printf "%s"]),
 	m4_esyscmd_s([cat project.properties | grep MAINTAINER | cut -d'=' -f2 | xargs printf "%s"]))
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
@@ -25,7 +25,8 @@ m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG])
 m4_ifdef([PKG_INSTALLDIR], [PKG_INSTALLDIR], [pkgconfigdir='${libdir}/pkgconfig' AC_SUBST([pkgconfigdir])])
 
 # Check dependencies
-RK_CHECK_MODULES
+PKG_CHECK_MODULES([ROBOTKERNEL], [robotkernel])
+PKG_CHECK_MODULES([SERVICE_PROVIDER_PROCESS_DATA_INSPECTION], [service_provider_process_data_inspection])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h])
@@ -60,4 +61,3 @@ esac
 AC_CONFIG_FILES([Makefile src/main/cpp/Makefile module_posix_timer.pc share/ln/module_posix_timer.inc.lnc])
 
 AC_OUTPUT
-
