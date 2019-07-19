@@ -68,18 +68,10 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node) :
 
 //! destrcution
 posix_timer::~posix_timer() {
-    stop();
-    pdin->reset_provider(provider_hash);
-    pdin = nullptr;
 }
         
 // additional module init stuff
 void posix_timer::init() {
-    string pdin_desc = "- double: interval\n";
-    pdin = make_shared<robotkernel::triple_buffer>(
-            sizeof(double), name, string("inputs"), pdin_desc, trigger::id());
-
-    provider_hash = pdin->set_provider(shared_from_this());
 }
 
 //! set rate of trigger device
@@ -235,7 +227,10 @@ int posix_timer::set_state(module_state_t state) {
             // register devices (trigger, process_data)
             k.remove_device(shared_from_this());
             k.remove_device(pdin);
-
+    
+            pdin->reset_provider(provider_hash);
+            pdin = nullptr;
+            provider_hash = 0;
         case init_2_init:
             // ====> re-/open ethercat device
             if (state == module_state_init)
@@ -251,8 +246,13 @@ int posix_timer::set_state(module_state_t state) {
                 break;
         case init_2_op:
         case init_2_safeop:
-        case init_2_preop:
+        case init_2_preop: {
             // ====> initial devices            
+            string pdin_desc = "- double: interval\n";
+            pdin = make_shared<robotkernel::triple_buffer>(
+                    sizeof(double), name, string("inputs"), pdin_desc, trigger::id());
+
+            provider_hash = pdin->set_provider(shared_from_this());
             
             // register devices (trigger, process_data)
             k.add_device(shared_from_this());
@@ -260,6 +260,7 @@ int posix_timer::set_state(module_state_t state) {
 
             if (state == module_state_preop)
                 break;
+        }
         case preop_2_op:
         case preop_2_safeop:
             // ====> start receiving measurements
