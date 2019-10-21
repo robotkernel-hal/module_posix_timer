@@ -7,12 +7,7 @@ class MainProject(ConanFile):
     url = f"https://rmc-github.robotic.dlr.de/robotkernel/{name}"
     description = "module_posix_timer is used to generate deterministic triggers for other modules."
     settings = "os", "compiler", "build_type", "arch"
-    scm = {
-        "type": "git",
-        "url": "auto",
-        "revision": "auto",
-        "submodule": "recursive",
-    }
+    exports_sources = ["*", "!.gitignore"] + ["!%s" % x for x in tools.Git().excluded_files()]
 
     generators = "pkg_config"
     requires = "robotkernel/[~=5.0]@robotkernel/unstable", "service_provider_process_data_inspection/[~=5.0]@robotkernel/unstable"
