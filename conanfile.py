@@ -1,5 +1,5 @@
 from conans import ConanFile, AutoToolsBuildEnvironment, tools
-import re
+import re, os
 
 class MainProject(ConanFile):
     name = "module_posix_timer"
@@ -8,9 +8,8 @@ class MainProject(ConanFile):
     description = "module_posix_timer is used to generate deterministic triggers for other modules."
     settings = "os", "compiler", "build_type", "arch"
     exports_sources = ["*", "!.gitignore"] + ["!%s" % x for x in tools.Git().excluded_files()]
-
     generators = "pkg_config"
-    requires = "robotkernel/[~=5.0]@robotkernel/unstable", "service_provider_process_data_inspection/[~=5.0]@robotkernel/unstable"
+    requires = "robotkernel/[~=5.0]@robotkernel/stable", "service_provider_process_data_inspection/[~=5.0]@robotkernel/stable"
 
     def source(self):
         filedata = None
