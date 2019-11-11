@@ -1,0 +1,6 @@
+modules:
+- name: timer
+  so_file: libmodule_posix_timer.so
+  config: { interval: 0.005 }
+  power_up: op
+
