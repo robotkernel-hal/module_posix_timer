@@ -51,7 +51,6 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node) :
     trigger(name, "inputs", 1./get_as<double>(node, "interval")),
     runnable(node), module_base("module_posix_timer", name, node) 
 {
-    interval    = get_as<double>(node, "interval");
     signo       = get_as<int>(node, "signo", SIGRTMIN);
     timer_id    = NULL;
     mode        = posix_timer_mode_timer;
@@ -82,6 +81,12 @@ void posix_timer::init() {
  * \param new_rate new trigger rate to set
  */
 void posix_timer::set_rate(double new_rate) {
+#ifndef TIMER_SET_RATE_ENABLED
+    if (mode == posix_timer_mode_timer) {
+        throw str_exception("setting rate not supported in timer mode!\n");
+    }
+#endif
+
     rate = new_rate;
 }
 
@@ -97,6 +102,7 @@ void posix_timer::run() {
 void posix_timer::run_nanosleep() {
     log(info, "nanosleep handler running with pid %d\n", getpid());
     auto now = std::chrono::high_resolution_clock::now();
+    double interval = 0.;
 
     while (running()) {
         now += std::chrono::nanoseconds((long)(1000000000. / get_rate()));
@@ -133,6 +139,7 @@ void posix_timer::run_timer() {
     if (timer_create(CLOCK_REALTIME, &se, &timer_id) == -1)
         log(error, "ERROR timer_create: %s\n", strerror(errno));
 
+    double interval = 1. / get_rate();
     double old_interval = interval;
     pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
 
@@ -159,6 +166,10 @@ void posix_timer::run_timer() {
             continue;
         }
 
+// disabled for now
+#ifdef TIMER_SET_RATE_ENABLED
+        interval = 1. / get_rate();
+
         if (old_interval != interval) {
             // reload timer with new value
             value.it_value.tv_sec = (int)(interval);
@@ -171,6 +182,7 @@ void posix_timer::run_timer() {
 
             old_interval = interval;
         }
+#endif
 
         trigger_modules();
     }

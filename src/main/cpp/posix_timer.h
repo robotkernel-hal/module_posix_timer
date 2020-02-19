@@ -48,7 +48,6 @@ class posix_timer :
         posix_timer& operator=(const posix_timer&);  //!< prevent assignment
 
     public:
-        double interval;                             //!< posix timer cyclic interval 
         int signo;                                   //!< signal number
         timer_t timer_id;                            //!< timer id
 
