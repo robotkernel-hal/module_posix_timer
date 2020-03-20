@@ -293,6 +293,10 @@ int posix_timer::set_state(module_state_t state) {
             break;
     }
 
-    return (this->state = state);
+    this->state = state;
+
+    log(info, "state %s reached\n", state_to_string(state));
+    
+    return this->state;
 }
 
