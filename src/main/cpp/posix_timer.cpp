@@ -211,7 +211,6 @@ void posix_timer::run_timer() {
   */
 int posix_timer::set_state(module_state_t state) {
     kernel& k = *kernel::get_instance();
-    log(info, "state %s requested\n", state_to_string(state));
 
     // get transition
     uint32_t transition = GEN_STATE(this->state, state);
@@ -293,10 +292,6 @@ int posix_timer::set_state(module_state_t state) {
             break;
     }
 
-    this->state = state;
-
-    log(info, "state %s reached\n", state_to_string(state));
-    
-    return this->state;
+    return (this->state = state);
 }
 
