@@ -2,7 +2,7 @@ Source: robotkernel-module-posix-timer
 Section: unknown
 Priority: optional
 Maintainer: Robert Burger <robert.burger@dlr.de>
-Build-Depends: debhelper-compat (= 13)
+Build-Depends: debhelper-compat (= 13), robotkernel (>=6), robotkernel-service-provider-process-data-inspection (>=6)
 Standards-Version: 4.5.1
 Homepage: <insert the upstream URL, if relevant>
 #Vcs-Browser: https://salsa.debian.org/debian/robotkernel-module-posix-timer
