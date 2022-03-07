@@ -140,7 +140,10 @@ void posix_timer::run_timer() {
         log(error, "ERROR timer_create: %s\n", strerror(errno));
 
     double interval = 1. / get_rate();
+// disabled for now
+#ifdef TIMER_SET_RATE_ENABLED
     double old_interval = interval;
+#endif
     pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
 
     struct itimerspec value, value_old; 
