@@ -105,8 +105,8 @@ void posix_timer::run_nanosleep() {
     double interval = 0.;
 
     while (running()) {
-        now += std::chrono::nanoseconds((long)(1000000000. / get_rate()));
         interval = 1. / get_rate();
+        now += std::chrono::nanoseconds((long)(1E9 * interval));
         pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
 
         do {
