@@ -39,6 +39,7 @@ AC_CHECK_FUNCS([strdup])
 
 # Checks for library functions.
 AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_LIB(rt, timer_delete)
 
 # Platform specific setup
 # Check for which host we are on and setup a few things
