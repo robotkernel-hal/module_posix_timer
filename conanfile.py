@@ -2,8 +2,8 @@ from conans import ConanFile, tools
 import os
 
 class MainProject(ConanFile):
-    python_requires = "conan_template_ln_generator/[~=5 >=5.0.7]@robotkernel/stable"
-    python_requires_extend = "conan_template_ln_generator.RobotkernelLNGeneratorConanFile"
+    python_requires = "conan_template/[~=5]@robotkernel/stable"
+    python_requires_extend = "conan_template.RobotkernelConanFile"
 
     name = "module_posix_timer"
     description = "module_posix_timer is used to generate deterministic triggers for other modules."
