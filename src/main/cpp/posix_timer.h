@@ -50,6 +50,7 @@ class posix_timer :
     public:
         int signo;                                   //!< signal number
         timer_t timer_id;                            //!< timer id
+        bool skip_missed;                            //!< skip missed cycles
 
         enum posix_timer_mode {
             posix_timer_mode_nanosleep,

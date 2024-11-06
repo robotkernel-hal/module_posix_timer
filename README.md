@@ -37,6 +37,9 @@ interval: 0.002
 prio: 60
 affinity: 0x01
 
+# Enable skipping missed cycles (Usually a bad option, e.g. something wrong, bad realtime , ..)
+#skip_missed: false
+
 #########################################################
 # logging settings
 

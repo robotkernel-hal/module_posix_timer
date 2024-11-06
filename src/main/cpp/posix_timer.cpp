@@ -55,6 +55,7 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node) :
     timer_id    = NULL;
     mode        = posix_timer_mode_timer;
     thread_name = name;
+    skip_missed = get_as<bool>(node, "skip_missed", false);
 
     if (node["mode"]) {
         if (node["mode"].as<string>() == string("nanosleep"))
@@ -107,6 +108,20 @@ void posix_timer::run_nanosleep() {
     while (running()) {
         interval = 1. / get_rate();
         now += std::chrono::nanoseconds((long)(1E9 * interval));
+
+        if (skip_missed) {
+            int skipped_cycles = 0;
+
+            while (now < std::chrono::high_resolution_clock::now()) {
+                skipped_cycles++;
+                now += std::chrono::nanoseconds((long)(1E9 * interval));
+            }
+
+            if (skipped_cycles > 0) {
+                log(warning, "skipped %d cylces!\n", skipped_cycles);
+            }
+        }
+
         pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
 
         do {
