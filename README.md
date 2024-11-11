@@ -37,6 +37,13 @@ interval: 0.002
 prio: 60
 affinity: 0x01
 
+# Enable skipping missed cycles (Usually a bad option, e.g. something wrong, bad realtime , ..)
+# Values can be:
+# "none" - no skipping is done, every tick will be generated.
+# "normal" - skip all ticks which ly in the past minus the next.
+# "strict" - skip all ticks which ly in the past.
+#skip_missed: none 
+
 #########################################################
 # logging settings
 
