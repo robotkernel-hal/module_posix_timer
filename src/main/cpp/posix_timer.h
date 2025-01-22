@@ -60,6 +60,7 @@ class posix_timer :
         enum posix_timer_mode {
             posix_timer_mode_nanosleep,
             posix_timer_mode_timer,
+            posix_timer_mode_busywait,
         } mode;
 
         robotkernel::sp_process_data_t pdin;         //!< named process data
@@ -95,6 +96,9 @@ class posix_timer :
 
         //! handler function called if thread is running
         void run();
+        
+        //! handler function for nanosleep mode
+        void run_busywait();
 
         //! handler function for nanosleep mode
         void run_nanosleep();

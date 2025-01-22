@@ -27,7 +27,7 @@ This example config file can be used as a template for own configurations.
 interval: 0.002
 
 # Sets the operating mode of the module.
-# Values can be "nanosleep" or "timer".
+# Values can be "nanosleep", "busywait" or "timer".
 #mode: nanosleep
 
 # Signal number to be used in "timer"-mode for timer_create.

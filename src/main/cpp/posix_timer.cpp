@@ -38,6 +38,8 @@
 MODULE_DEF(module_posix_timer, module_posix_timer::posix_timer);
 
 using namespace std;
+using namespace std::chrono;
+
 using namespace robotkernel;
 using namespace module_posix_timer;
 using namespace string_util;
@@ -70,6 +72,8 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node) :
             mode = posix_timer_mode_nanosleep;
         else if (node["mode"].as<string>() == string("timer"))
             mode = posix_timer_mode_timer;
+        else if (node["mode"].as<string>() == string("busywait"))
+            mode = posix_timer_mode_busywait;
     } else 
         log(info, "mode not specified, assuming timer mode!\n");
 };
@@ -103,8 +107,50 @@ void posix_timer::set_rate(double new_rate) {
 void posix_timer::run() {
     if (mode == posix_timer_mode_nanosleep)
         return run_nanosleep();
+    else if (mode == posix_timer_mode_busywait) 
+        return run_busywait();
 
     return run_timer();
+}
+
+//! handler function for nanosleep mode
+void posix_timer::run_busywait() {
+    log(info, "busywait handler running with pid %d\n", getpid());
+
+    steady_clock::time_point next = steady_clock::now(), act;
+    double interval = 0.;
+
+    while (running()) {
+        interval = 1. / get_rate();
+        next += nanoseconds((uint64_t)(1E9 * interval));
+
+        if (skip_missed != skip_none) {
+            int skipped_cycles = 0;
+            auto add_time = nanoseconds((long)0);
+            if (skip_missed == skip_normal) {
+                add_time += nanoseconds((long)(1E9 * interval));
+            }
+
+            while ((next + add_time) < steady_clock::now()) {
+                skipped_cycles++;
+                next += nanoseconds((long)(1E9 * interval));
+            }
+
+            if (skipped_cycles > 0) {
+                log(warning, "skipped %d cylces!\n", skipped_cycles);
+            }
+        }
+
+        pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
+
+        do {
+            act = steady_clock::now();
+        } while (act < next);
+
+        trigger_modules();
+    }
+
+    log(info, "busysleep handler stopped\n");
 }
 
 //! handler function for nanosleep mode
