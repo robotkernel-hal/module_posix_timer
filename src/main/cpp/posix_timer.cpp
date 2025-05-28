@@ -49,7 +49,6 @@ using namespace string_util;
  * \param node yaml configuration node
  */
 posix_timer::posix_timer(const char* name, const YAML::Node& node) : 
-    pd_provider(name),
     trigger(name, "inputs", 1./get_as<double>(node, "interval")),
     runnable(node), module_base("module_posix_timer", name, node) 
 {
@@ -141,7 +140,7 @@ void posix_timer::run_busywait() {
             }
         }
 
-        pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
+        pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval));
 
         do {
             act = steady_clock::now();
@@ -180,7 +179,7 @@ void posix_timer::run_nanosleep() {
             }
         }
 
-        pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
+        pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval));
 
         do {
             std::this_thread::sleep_until(now);
@@ -217,7 +216,7 @@ void posix_timer::run_timer() {
 #ifdef TIMER_SET_RATE_ENABLED
     double old_interval = interval;
 #endif
-    pdin->write(provider_hash, 0, (uint8_t *)&interval, sizeof(interval));
+    pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval));
 
     struct itimerspec value, value_old; 
     value.it_value.tv_sec = (int)(interval);
@@ -315,9 +314,9 @@ int posix_timer::set_state(module_state_t state) {
             k.remove_device(shared_from_this());
             k.remove_device(pdin);
     
-            pdin->reset_provider(provider_hash);
+            pdin->reset_provider(prov);
             pdin = nullptr;
-            provider_hash = 0;
+            prov = nullptr;
         case init_2_init:
             // ====> re-/open ethercat device
             if (state == module_state_init)
@@ -335,14 +334,18 @@ int posix_timer::set_state(module_state_t state) {
         case init_2_safeop:
         case init_2_preop: {
             // ====> initial devices            
+            
+            // add trigger device
+            k.add_device(shared_from_this());
+
             string pdin_desc = "- double: interval\n";
             pdin = make_shared<robotkernel::triple_buffer>(
                     sizeof(double), name, string("inputs"), pdin_desc, trigger::id());
 
-            provider_hash = pdin->set_provider(shared_from_this());
+            prov = make_shared<pd_provider>(name);
+            pdin->set_provider(prov);
             
-            // register devices (trigger, process_data)
-            k.add_device(shared_from_this());
+            // register process_data
             k.add_device(pdin);
 
             if (state == module_state_preop)
