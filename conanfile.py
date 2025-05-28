@@ -1,4 +1,5 @@
-from conan import ConanFile
+from conan import ConanFile, conan_version
+from conan.tools.scm import Version
 import os
 
 
@@ -9,4 +10,4 @@ class MainProject(ConanFile):
     name = "module_posix_timer"
     description = "module_posix_timer is used to generate deterministic triggers for other modules."
     exports_sources = ["*", "!.gitignore"]
-    requires = ["robotkernel/[~5]@robotkernel/stable", "service_provider_process_data_inspection/[~5]@robotkernel/stable"]
+    requires = ["robotkernel/[~6]@robotkernel/unstable", "service_provider_process_data_inspection/[~6]@robotkernel/unstable"]
