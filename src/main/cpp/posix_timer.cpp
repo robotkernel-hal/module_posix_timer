@@ -41,6 +41,7 @@ using namespace std;
 using namespace std::chrono;
 
 using namespace robotkernel;
+using namespace service_provider;
 using namespace module_posix_timer;
 using namespace string_util;
 
@@ -50,7 +51,7 @@ using namespace string_util;
  */
 posix_timer::posix_timer(const char* name, const YAML::Node& node) : 
     trigger(name, "inputs", 1./get_as<double>(node, "interval")),
-    runnable(node), module_base("module_posix_timer", name, node) 
+    runnable(node), module_base("module_posix_timer", name, node)
 {
     signo       = get_as<int>(node, "signo", SIGRTMIN);
     timer_id    = NULL;
@@ -278,7 +279,7 @@ void posix_timer::run_timer() {
 
     log(info, "timer handler stopped\n");
 }
-
+        
 //! set module state machine to defined state
 /*!
   \param state requested state
@@ -310,6 +311,8 @@ int posix_timer::set_state(module_state_t state) {
         case preop_2_boot:
             // ====> deinit devices
             
+            pdin_inspect = nullptr;
+
             // register devices (trigger, process_data)
             k.remove_device(shared_from_this());
             k.remove_device(pdin);
@@ -347,6 +350,8 @@ int posix_timer::set_state(module_state_t state) {
             
             // register process_data
             k.add_device(pdin);
+
+            pdin_inspect = make_shared<service_provider::process_data_inspection::pd_inspection>(name, "inputs", pdin);
 
             if (state == module_state_preop)
                 break;

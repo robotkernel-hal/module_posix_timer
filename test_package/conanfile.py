@@ -15,9 +15,6 @@ class TestTestConan(ConanFile):
         self.requires(self.tested_reference_str)
 
     def test(self):
-        rkc_path = os.path.join(self.source_folder, "mod_test.rkc")
-        shutil.copy(rkc_path, "mod_test.rkc")
-
         if can_run(self):
             self.run("robotkernel --test-run --config .%smod_test.rkc" % os.sep, env="conanrun")
         else:

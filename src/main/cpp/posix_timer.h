@@ -29,6 +29,8 @@
 #include "robotkernel/kernel.h"
 #include "robotkernel/trigger_base.h"
 
+#include "service_provider/process_data_inspection/base.h"
+
 namespace module_posix_timer {
 #ifdef EMACS
 }
@@ -39,7 +41,7 @@ class posix_timer :
     public std::enable_shared_from_this<posix_timer>,
     public robotkernel::trigger,
     public robotkernel::runnable, 
-    public robotkernel::module_base 
+    public robotkernel::module_base
 {
     private:
         posix_timer();                               //!< prevent default cons
@@ -64,6 +66,7 @@ class posix_timer :
 
         robotkernel::sp_process_data_t pdin;         //!< named process data
         robotkernel::sp_pd_provider_t prov;
+        service_provider::process_data_inspection::sp_pd_inspection_t pdin_inspect;
 
         //! default construction
         /*!
