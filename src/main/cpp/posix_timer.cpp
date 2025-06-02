@@ -311,6 +311,7 @@ int posix_timer::set_state(module_state_t state) {
         case preop_2_boot:
             // ====> deinit devices
             
+            k.remove_device(pdin_inspect);
             pdin_inspect = nullptr;
 
             // register devices (trigger, process_data)
@@ -352,6 +353,7 @@ int posix_timer::set_state(module_state_t state) {
             k.add_device(pdin);
 
             pdin_inspect = make_shared<service_provider::process_data_inspection::pd_inspection>(name, "inputs", pdin);
+            k.add_device(pdin_inspect);
 
             if (state == module_state_preop)
                 break;
