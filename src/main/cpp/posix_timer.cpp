@@ -45,19 +45,16 @@ using namespace service_provider;
 using namespace module_posix_timer;
 using namespace string_util;
 
-//! default construction
-/*!
- * \param node yaml configuration node
- */
-posix_timer::posix_timer(const char* name, const YAML::Node& node) : 
-    trigger(name, "inputs", 1./get_as<double>(node, "interval")),
-    runnable(node), module_base("module_posix_timer", name, node)
+//! Construction
+timer_base::timer_base(std::shared_ptr<posix_timer> parent, const YAML::Node& config) :
+    runnable(config),
+    trigger(parent->name, get_as<std::string>(config, "name"), 1./get_as<double>(config, "interval")),
+    parent(parent) 
 {
-    signo       = get_as<int>(node, "signo", SIGRTMIN);
-    timer_id    = NULL;
-    mode        = posix_timer_mode_timer;
-    thread_name = name;
-    string tmp_skip_missed = get_as<string>(node, "skip_missed", "none");
+    name = get_as<std::string>(config, "name");
+    runnable::set_name(parent->name + "." + name);
+    
+    string tmp_skip_missed = get_as<string>(config, "skip_missed", "none");
 
     if (tmp_skip_missed == string("strict")) {
         skip_missed = skip_strict;
@@ -66,101 +63,49 @@ posix_timer::posix_timer(const char* name, const YAML::Node& node) :
     } else {
         skip_missed = skip_none;
     }
-
-    if (node["mode"]) {
-        if (node["mode"].as<string>() == string("nanosleep"))
-            mode = posix_timer_mode_nanosleep;
-        else if (node["mode"].as<string>() == string("timer"))
-            mode = posix_timer_mode_timer;
-        else if (node["mode"].as<string>() == string("busywait"))
-            mode = posix_timer_mode_busywait;
-    } else 
-        log(info, "mode not specified, assuming timer mode!\n");
-};
-
-//! destrcution
-posix_timer::~posix_timer() {
-}
-        
-// additional module init stuff
-void posix_timer::init() {
 }
 
-//! set rate of trigger device
-/*!
- * set the rate of the current trigger
- * overload in derived trigger class
- *
- * \param new_rate new trigger rate to set
- */
-void posix_timer::set_rate(double new_rate) {
-#ifndef TIMER_SET_RATE_ENABLED
-    if (mode == posix_timer_mode_timer) {
-        throw str_exception("setting rate not supported in timer mode!\n");
-    }
-#endif
+//! Initialize timer
+void timer_base::init(void) {
+    // add trigger device
+    robotkernel::add_device(shared_from_this());
 
-    rate = new_rate;
+    string pdin_desc = "- double: interval\n";
+    pdin = make_shared<robotkernel::triple_buffer>(
+            sizeof(double), parent->name, name + string(".inputs"), pdin_desc, trigger::id());
+
+    prov = make_shared<pd_provider>(name);
+    pdin->set_provider(prov);
+
+    // register process_data
+    robotkernel::add_device(pdin);
+
+    pdin_inspect = make_shared<service_provider::process_data_inspection::pd_inspection>(name, "inputs", pdin);
+    robotkernel::add_device(pdin_inspect);
 }
 
-//! handler function called if thread is running
-void posix_timer::run() {
-    if (mode == posix_timer_mode_nanosleep)
-        return run_nanosleep();
-    else if (mode == posix_timer_mode_busywait) 
-        return run_busywait();
+//! Deinitialize timer
+void timer_base::deinit(void) {
+    robotkernel::remove_device(pdin_inspect);
+    pdin_inspect = nullptr;
 
-    return run_timer();
+    // register devices (trigger, process_data)
+    robotkernel::remove_device(shared_from_this());
+    robotkernel::remove_device(pdin);
+
+    pdin->reset_provider(prov);
+    pdin = nullptr;
+    prov = nullptr;
 }
 
 //! handler function for nanosleep mode
-void posix_timer::run_busywait() {
-    log(info, "busywait handler running with pid %d\n", getpid());
-
-    steady_clock::time_point next = steady_clock::now(), act;
-    double interval = 0.;
-
-    while (running()) {
-        interval = 1. / get_rate();
-        next += nanoseconds((uint64_t)(1E9 * interval));
-
-        if (skip_missed != skip_none) {
-            int skipped_cycles = 0;
-            auto add_time = nanoseconds((long)0);
-            if (skip_missed == skip_normal) {
-                add_time += nanoseconds((long)(1E9 * interval));
-            }
-
-            while ((next + add_time) < steady_clock::now()) {
-                skipped_cycles++;
-                next += nanoseconds((long)(1E9 * interval));
-            }
-
-            if (skipped_cycles > 0) {
-                log(warning, "skipped %d cylces!\n", skipped_cycles);
-            }
-        }
-
-        pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval));
-
-        do {
-            act = steady_clock::now();
-        } while (act < next);
-
-        trigger_modules();
-    }
-
-    log(info, "busysleep handler stopped\n");
-}
-
-//! handler function for nanosleep mode
-void posix_timer::run_nanosleep() {
-    log(info, "nanosleep handler running with pid %d\n", getpid());
+void nanosleep::run() {
+    parent->log(info, "%s -> nanosleep handler running with pid %d\n", name.c_str(), getpid());
     auto now = std::chrono::high_resolution_clock::now();
     double interval = 0.;
 
     while (running()) {
-        interval = 1. / get_rate();
+        interval = 1. / trigger::get_rate();
         now += std::chrono::nanoseconds((long)(1E9 * interval));
 
         if (skip_missed != skip_none) {
@@ -176,32 +121,72 @@ void posix_timer::run_nanosleep() {
             }
 
             if (skipped_cycles > 0) {
-                log(warning, "skipped %d cylces!\n", skipped_cycles);
+                parent->log(warning, "%s -> skipped %d cylces!\n", name.c_str(), skipped_cycles);
             }
         }
 
-        pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval));
+        pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval), true, false);
 
         do {
             std::this_thread::sleep_until(now);
         } while (now > std::chrono::high_resolution_clock::now());
 
-        trigger_modules();
+        trigger::do_trigger();
     }
 
-    log(info, "nanosleep handler stopped\n");
+    parent->log(info, "%s -> nanosleep handler stopped\n", name.c_str());
+}
+
+//! handler function for nanosleep mode
+void busywait::run() {
+    parent->log(info, "busywait handler running with pid %d\n", getpid());
+
+    steady_clock::time_point next = steady_clock::now(), act;
+    double interval = 0.;
+
+    while (running()) {
+        interval = 1. / trigger::get_rate();
+        next += nanoseconds((uint64_t)(1E9 * interval));
+
+        if (skip_missed != skip_none) {
+            int skipped_cycles = 0;
+            auto add_time = nanoseconds((long)0);
+            if (skip_missed == skip_normal) {
+                add_time += nanoseconds((long)(1E9 * interval));
+            }
+
+            while ((next + add_time) < steady_clock::now()) {
+                skipped_cycles++;
+                next += nanoseconds((long)(1E9 * interval));
+            }
+
+            if (skipped_cycles > 0) {
+                parent->log(warning, "skipped %d cylces!\n", skipped_cycles);
+            }
+        }
+
+        pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval), true, false);
+
+        do {
+            act = steady_clock::now();
+        } while (act < next);
+
+        trigger::do_trigger();
+    }
+
+    parent->log(info, "busysleep handler stopped\n");
 }
 
 //! handler function for timer mode
-void posix_timer::run_timer() {
-    log(info, "timer handler running with pid %d\n", getpid());
+void timer::run() {
+    parent->log(info, "timer handler running with pid %d\n", getpid());
     
     sigset_t set;
     if (sigemptyset (&set) == -1)
-        log(error, "sigemptyset %s\n", strerror(errno));
+        parent->log(error, "sigemptyset %s\n", strerror(errno));
 
     if (sigaddset (&set, signo) == -1)
-        log(error, "sigaddset %s\n", strerror(errno));
+        parent->log(error, "sigaddset %s\n", strerror(errno));
 
     /* set up timer to send out signal */
     struct sigevent se;
@@ -209,15 +194,16 @@ void posix_timer::run_timer() {
     se.sigev_notify = SIGEV_SIGNAL;
     se.sigev_signo = signo;
 
-    if (timer_create(CLOCK_REALTIME, &se, &timer_id) == -1)
-        log(error, "ERROR timer_create: %s\n", strerror(errno));
+    if (timer_create(CLOCK_REALTIME, &se, &timer_id) == -1) {
+        parent->log(error, "ERROR timer_create: %s\n", strerror(errno));
+    }
 
     double interval = 1. / get_rate();
 // disabled for now
 #ifdef TIMER_SET_RATE_ENABLED
     double old_interval = interval;
 #endif
-    pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval));
+    pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval), true, false);
 
     struct itimerspec value, value_old; 
     value.it_value.tv_sec = (int)(interval);
@@ -225,8 +211,9 @@ void posix_timer::run_timer() {
     value.it_interval.tv_sec = value.it_value.tv_sec;
     value.it_interval.tv_nsec = value.it_value.tv_nsec;
 
-    if (timer_settime(timer_id, 0, &value, &value_old) == -1)
-        log(error, "timer_settime %s\n", strerror(errno));
+    if (timer_settime(timer_id, 0, &value, &value_old) == -1) {
+        parent->log(error, "timer_settime %s\n", strerror(errno));
+    }
 
     while (running()) {
         struct timespec ts = { 1, 0 };
@@ -235,16 +222,17 @@ void posix_timer::run_timer() {
         int ret = sigtimedwait(&set, &si, &ts);
 
         if (ret == -1) {
-            if (errno == EAGAIN)
-                log(info, "sigtimedwait timed out\n");
-            if (errno == EINVAL)
-                log(info, "sigtimedwait einval\n");
+            if (errno == EAGAIN) {
+                parent->log(info, "sigtimedwait timed out\n");
+            } if (errno == EINVAL) {
+                parent->log(info, "sigtimedwait einval\n");
+            }
             continue;
         }
 
 // disabled for now
 #ifdef TIMER_SET_RATE_ENABLED
-        interval = 1. / get_rate();
+        interval = 1. / trigger::get_rate();
 
         if (old_interval != interval) {
             // reload timer with new value
@@ -253,14 +241,15 @@ void posix_timer::run_timer() {
             value.it_interval.tv_sec = value.it_value.tv_sec;
             value.it_interval.tv_nsec = value.it_value.tv_nsec;
 
-            if (timer_settime(timer_id, 0, &value, &value_old) == -1)
-                log(error, "timer_settime %s\n", strerror(errno));
+            if (timer_settime(timer_id, 0, &value, &value_old) == -1) {
+                parent->log(error, "timer_settime %s\n", strerror(errno));
+            }
 
             old_interval = interval;
         }
 #endif
 
-        trigger_modules();
+        trigger::do_trigger();
     }
 
     if (timer_id) {
@@ -270,114 +259,48 @@ void posix_timer::run_timer() {
         value.it_interval.tv_sec = 0;
         value.it_interval.tv_nsec = 0;
 
-        if (timer_settime(timer_id, 0, &value, NULL) == -1)
-            log(error, "ERROR timer_settime: %s\n",
-                    strerror(errno));
+        if (timer_settime(timer_id, 0, &value, NULL) == -1) {
+            parent->log(error, "ERROR timer_settime: %s\n", strerror(errno));
+        }
 
         timer_delete(timer_id);
     }
 
-    log(info, "timer handler stopped\n");
+    parent->log(info, "timer handler stopped\n");
 }
-        
-//! set module state machine to defined state
+
+//! default construction
 /*!
-  \param state requested state
-  \return success or failure
-  */
-int posix_timer::set_state(module_state_t state) {
-    kernel& k = *kernel::get_instance();
-
-    // get transition
-    uint32_t transition = GEN_STATE(this->state, state);
-
-    switch (transition) {
-        case op_2_safeop:
-        case op_2_preop:
-        case op_2_init:
-        case op_2_boot:
-            // ====> stop sending commands
-            if (state == module_state_safeop)
-                break;
-        case safeop_2_preop:
-        case safeop_2_init:
-        case safeop_2_boot:
-            // ====> stop receiving measurements
-            stop();
-
-            if (state == module_state_preop)
-                break;
-        case preop_2_init:
-        case preop_2_boot:
-            // ====> deinit devices
-            
-            k.remove_device(pdin_inspect);
-            pdin_inspect = nullptr;
-
-            // register devices (trigger, process_data)
-            k.remove_device(shared_from_this());
-            k.remove_device(pdin);
-    
-            pdin->reset_provider(prov);
-            pdin = nullptr;
-            prov = nullptr;
-        case init_2_init:
-            // ====> re-/open ethercat device
-            if (state == module_state_init)
-                break;
-        case init_2_boot:
-            break;
-        case boot_2_init:
-        case boot_2_preop:
-        case boot_2_safeop:
-        case boot_2_op:
-            // ====> re-/open ethercat device
-            if (state == module_state_init)
-                break;
-        case init_2_op:
-        case init_2_safeop:
-        case init_2_preop: {
-            // ====> initial devices            
-            
-            // add trigger device
-            k.add_device(shared_from_this());
-
-            string pdin_desc = "- double: interval\n";
-            pdin = make_shared<robotkernel::triple_buffer>(
-                    sizeof(double), name, string("inputs"), pdin_desc, trigger::id());
-
-            prov = make_shared<pd_provider>(name);
-            pdin->set_provider(prov);
-            
-            // register process_data
-            k.add_device(pdin);
-
-            pdin_inspect = make_shared<service_provider::process_data_inspection::pd_inspection>(name, "inputs", pdin);
-            k.add_device(pdin_inspect);
-
-            if (state == module_state_preop)
-                break;
-        }
-        case preop_2_op:
-        case preop_2_safeop:
-            // ====> start receiving measurements
-            start();
-
-            if (state == module_state_safeop)
-                break;
-        case safeop_2_op:
-            // ====> start sending commands           
-            break;
-        case op_2_op:
-        case safeop_2_safeop:
-        case preop_2_preop:
-            // ====> do nothing
-            break;
-
-        default:
-            break;
-    }
-
-    return (this->state = state);
+ * \param node yaml configuration node
+ */
+posix_timer::posix_timer(const char* name, const YAML::Node& node) : 
+    module_base("module_posix_timer", name, node)
+{
+    config = YAML::Clone(node);
 }
 
+// additional module init stuff
+void posix_timer::init() {
+    std::function<void(const YAML::Node& timer_config)> create_timer = [&](const YAML::Node& timer_config) { 
+        if (timer_config["mode"]) {
+            if (timer_config["mode"].as<string>() == string("nanosleep")) {
+                timers.push_back(std::make_shared<nanosleep>(shared_from_this(), timer_config));
+            } else if (timer_config["mode"].as<string>() == string("timer")) {
+                timers.push_back(std::make_shared<timer>(shared_from_this(), timer_config));
+            } else if (timer_config["mode"].as<string>() == string("busywait")) {
+                timers.push_back(std::make_shared<busywait>(shared_from_this(), timer_config));
+            }
+        } else {
+            log(info, "mode not specified, assuming timer mode!\n");
+        }
+    };
+
+    if (config["timers"]) {
+        for (const auto& entry : config["timers"]) {
+            create_timer(entry);
+        }
+    } else { 
+        create_timer(config);
+    }
+}
+ 
