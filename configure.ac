@@ -59,6 +59,6 @@ case $target in
         ;;
 esac
 
-AC_CONFIG_FILES([Makefile src/main/cpp/Makefile module_posix_timer.pc])
+AC_CONFIG_FILES([Makefile src/Makefile module_posix_timer.pc])
 
 AC_OUTPUT
