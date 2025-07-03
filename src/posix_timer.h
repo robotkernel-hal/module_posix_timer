@@ -26,7 +26,6 @@
 #include "robotkernel/runnable.h"
 #include "robotkernel/module_base.h"
 #include "robotkernel/robotkernel.h"
-#include "robotkernel/process_data/triple_buffer.h"
 #include "robotkernel/trigger_base.h"
 
 #include "service_provider/process_data_inspection/base.h"
