@@ -33,7 +33,6 @@
 #include <chrono>
 
 #include "yaml-cpp/yaml.h"
-#include <string_util/string_util.h>
 
 MODULE_DEF(module_posix_timer, module_posix_timer::posix_timer);
 
@@ -41,9 +40,7 @@ using namespace std;
 using namespace std::chrono;
 
 using namespace robotkernel;
-using namespace service_provider;
 using namespace module_posix_timer;
-using namespace string_util;
 
 //! Construction
 timer_base::timer_base(std::shared_ptr<posix_timer> parent, const YAML::Node& config) :
@@ -80,7 +77,7 @@ void timer_base::init(void) {
     // register process_data
     robotkernel::add_device(pdin);
 
-    pdin_inspect = make_shared<service_provider::process_data_inspection::pd_inspection>(name, "inputs", pdin);
+    pdin_inspect = make_shared<service_provider_process_data_inspection::pd_inspection>(name, "inputs", pdin);
     robotkernel::add_device(pdin_inspect);
 }
 

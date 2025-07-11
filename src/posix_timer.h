@@ -28,7 +28,7 @@
 #include "robotkernel/robotkernel.h"
 #include "robotkernel/trigger_base.h"
 
-#include "service_provider/process_data_inspection/base.h"
+#include "service_provider_process_data_inspection/base.h"
 
 namespace module_posix_timer {
 
@@ -52,7 +52,7 @@ class timer_base :
         
         robotkernel::sp_process_data_t pdin;         //!< named process data
         robotkernel::sp_pd_provider_t prov;
-        service_provider::process_data_inspection::sp_pd_inspection_t pdin_inspect;
+        service_provider_process_data_inspection::sp_pd_inspection_t pdin_inspect;
 
     public:
         //! Construction
