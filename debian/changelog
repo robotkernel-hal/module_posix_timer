@@ -1,5 +1,284 @@
-robotkernel-module-posix-timer (6.0.0) unstable; urgency=medium
+module-posix-timer (6.0.0~pre1) unstable; urgency=low
 
-  * Initial Release.
+  * prep: 6.0.0
 
- -- Robert Burger <robert.burger@dlr.de>  Thu, 01 Apr 2021 13:35:27 +0200
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 22 Jan 2025 10:29:08 +0100
+
+module-posix-timer (5.1.0) unstable; urgency=low
+
+  * bump: version to 5.1.0
+  * add: busywait mode
+  * Merge pull request #8 from robotkernel/feat/anti-catch-up
+  * change: splitted skip_missed into two modes: 'normal' and 'strict'
+  * feat: added option to skip missed cycles with 'skip_missed: true' option
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 22 Jan 2025 10:29:08 +0100
+
+module-posix-timer (5.0.11) unstable; urgency=low
+
+  * Merge pull request #7 from raff-an/patch-1
+  * fix: conan2 compatibility
+
+ -- Mühlbauer, Maximilian Sebastian <Maximilian.Muehlbauer@dlr.de>  Tue, 14 May 2024 16:41:34 +0200
+
+module-posix-timer (5.0.10) unstable; urgency=low
+
+  * Merge pull request #6 from robotkernel/feat/use_build_profiles
+  * feat: build with build profiles
+  * chore: black format
+  * feat: port to conan2 syntax
+
+ -- Burger, Robert <robert.burger@dlr.de>  Tue, 21 Nov 2023 06:08:00 +0100
+
+module-posix-timer (5.0.9) unstable; urgency=low
+
+  * switched to conan_template
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 26 Jan 2023 16:54:07 +0100
+
+module-posix-timer (5.0.8) unstable; urgency=low
+
+  * add: check rt library for timer_delete
+  * cleanup: code reorder
+  * FIX: build warnings
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 22 Nov 2022 15:50:39 +0100
+
+module-posix-timer (5.0.7) unstable; urgency=low
+
+  * CHANGE: switched to new template and python_require
+  * CHANGE: debian version
+  * FIX: debian deps
+  * ADD: debian build files
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 3 Dec 2021 06:28:43 +0100
+
+module-posix-timer (5.0.6) unstable; urgency=low
+
+  * removed state machine log, done by robotkernel for all modules
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 23 Mar 2020 07:13:54 +0100
+
+module-posix-timer (5.0.5) unstable; urgency=low
+
+  * added log output to state machine
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 20 Mar 2020 08:02:13 +0100
+
+module-posix-timer (5.0.4) unstable; urgency=low
+
+  * disabled set rate on posix timer mode, use nanosleep instead
+  * Delete README.wiki
+  * Update README.md
+  * Create README.md
+  * added example config
+  * added example config file
+  * switching to defaults
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 19 Feb 2020 14:30:58 +0100
+
+module-posix-timer (5.0.3) unstable; urgency=low
+
+  * using conan_template now
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 26 Nov 2019 12:49:00 +0100
+
+module-posix-timer (5.0.2) unstable; urgency=low
+
+  * added test
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 11 Nov 2019 13:39:41 +0100
+
+module-posix-timer (5.0.1) unstable; urgency=low
+
+  * changes targets
+  * Merge branch 'release/5.0.1'
+  * added architectures
+  * added architectures
+  * fixed jenkinsfile
+  * fixed jenkinsfile
+  * added architectures
+  * added architectures
+  * build: updated build/ci files for cissy 1.0->2.0
+  * build: updated build/ci files for cissy 1.0->2.0
+  * build: updated build/ci files for cissy 1.0->2.0
+  * build: updated build/ci files for cissy 1.0->2.0
+  * build: updated build/ci files for cissy 1.0->2.0
+  * build: updated build/ci files for cissy 1.0->2.0
+  * fixed destruction of posix timer
+  * added license
+  * fixed new conan recipe
+  * new conan recipe
+  * renamed trigger device
+  * updated jenkins file
+  * added dep to service_provider_process_data_inspection
+  * readded sled
+  * fixed requires
+  * added missing m4 macro
+  * updated requiers
+  * chore: conan support
+  * added jenkins, conan
+  * fix: dependency version ranges
+  * fixed arch for lnc include
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 24 Oct 2019 13:27:19 +0200
+
+module-posix-timer (5.0.0) unstable; urgency=low
+
+  * fixed lang to c++
+  * Prep 5.0.0 release
+  * typo
+  * fixed wiki url
+  * chaned README to wiki format
+  * empty README.wiki
+  * added pd provider
+  * auto commit
+  * fixed version
+  * Merge remote-tracking branch 'origin/master' into robotkernel-5
+  * added generated inc.lnc to ignores
+  * fixed lnc include file
+  * fixed nanosleep mode
+  * fixed install rule of lnc include file
+  * switched to c++11 chrono
+  * fixed lnc include file bulid
+  * fixed lnc include file generation
+  * fix: dependencies
+  * inc version
+  * fixed for pt release
+  * switched to triple_buffer impl
+  * style fix
+  * changes for triple buffer
+  * fixed device class name
+  * removed copying doc in ptfile
+  * deleted old doc dir
+  * Rename # module-posix-timer  The **module-posix-timer** is used to as a generic trigger generator.  It supports two different modes. In *posix_timer* mode a POSIX per-process timer is created. Otherwise in 'nanosleep' mode the timer increments are  slept with the nanosleep function.  ## robotkernel devices  The **module-posix-timer** creates two **robotkernel** devices: * trigger device: <module_name>.posix_timer.trigger * process data device: <module_name>.inputs.pd  ## config file example  This example loads the posix timer module and sets up a nanosleep trigger with 3kHz.       -   name: timer                                                                           so_file: libmodule-posix-timer.so                                                     config:                                                                                   loglevel: info                                                                        interval: 0.000333333                                                                 mode: nanosleep                                                                       prio: 90               affinity: 1                                                                       power_up: op             README.md to README.md
+  * Create README.md
+  * device changes
+  * code cleanup
+  * mods for new trigger classes
+  * fixed process_data namespace
+  * added process data for interval
+  * make posix timer interval be adjustable via trigger device
+  * added rate to trigger_base construction
+  * switched to named trigger device
+  * Merge branch 'robotkernel-5' of rmc-github.robotic.dlr.de:robotkernel/module-posix-timer into robotkernel-5
+  * removed wrong libdir
+  * removed reference to scripts m4
+  * added new dependency resolution
+  * Merge branch 'robotkernel-5' of rmc-github.robotic.dlr.de:robotkernel/module-posix-timer into robotkernel-5
+  * changed set_state to use transitions
+  * removed autogen.sh
+  * removed scripts and makefile link
+  * added install rule for pc-file
+  * autotools build
+  * autotools build
+  * switched to robotkernel-5 branch
+  * switched to yaml-cpp-rmc
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 12 Mar 2018 09:51:44 +0100
+
+module-posix-timer (4.1.0) unstable; urgency=low
+
+  * 'automated_commit'
+  * 'scripts_updated'
+  * 'scripts_updated'
+  * commit scripts
+  * fixed
+  * fixed build
+  * 'scripts_updated'
+  * 'replaced_with_default'
+  * 'scripts_updated'
+  * 'scripts_updated'
+  * 'scripts_updated'
+  * 'scripts_updated'
+  * "transforming"
+  * 'scripts_updated'
+  * 'scripts_updated'
+  * added gradle props
+  * updated scripts
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 30 Nov 2016 10:28:13 +0100
+
+module-posix-timer (4.0.2) unstable; urgency=low
+
+  * prep 4.0.2
+  * added getpdin call
+  * interval & shift
+  * new scripts
+  * added submodule scripts
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 21 Mar 2016 10:32:32 +0100
+
+module-posix-timer (4.0.1) unstable; urgency=low
+
+  * prep 4.0.1, rebuild
+
+ -- Robert Burger <robert.burger@dlr.de>  Thu, 15 Oct 2015 08:48:03 +0000
+
+module-posix-timer (4.0.0) unstable; urgency=low
+
+  * added ignores
+  * prep 4.0.0 added documentation key in ptfile
+  * modified loglevel for rk 4.0.0 yaml-cpp 0.5.2 switch prep 4.0.0
+  * prep 3.2.0
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 15 Sep 2015 07:02:05 +0000
+
+module-posix-timer (3.1.2) unstable; urgency=low
+
+  * prep 3.1.2
+  * cleaned up code, now using module_base
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 4 Aug 2015 09:27:40 +0000
+
+module-posix-timer (3.1.1) unstable; urgency=low
+
+  * added missing archs file
+  * fixed loglevels, fixed supported archs
+  * modified build system
+  * fixed indenting
+
+ -- Robert Burger <robert.burger@dlr.de>  Wed, 8 Jul 2015 11:13:40 +0000
+
+module-posix-timer (3.1.0) unstable; urgency=low
+
+  * prep 3.1.0
+  * added release target
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 2 Feb 2015 13:37:13 +0000
+
+module-posix-timer (3.0.3) unstable; urgency=low
+
+  * signo is now optional
+  * call AM_PROG_AR macro only on newser automakes
+  * made signo optional
+  * using trigger_modules instead of triggering manually here
+
+ -- Florian Schmidt <Florian.Schmidt@dlr.de>  Tue, 23 Sep 2014 16:06:53 +0000
+
+module-posix-timer (3.0.2) unstable; urgency=low
+
+  * release with nanosleep and timer mode
+  * implemented nanosleep and timer mode for posix_timer m odule
+  * fixed ln include file for local release
+  * added install rule for ln include fiel
+
+ -- Robert Burger <robert.burger@dlr.de>  Mon, 8 Sep 2014 11:03:48 +0000
+
+module-posix-timer (3.0.1) unstable; urgency=low
+
+  * fixed arch name
+  * bugfix release of posix timer
+  * added generation of ptfile, added inc.lnc
+
+ -- Robert Burger <robert.burger@dlr.de>  Tue, 5 Aug 2014 11:05:33 +0000
+
+module-posix-timer (3.0.0) unstable; urgency=low
+
+  * fixed doc
+  * fixed build
+  * imported from: https://rmsvn01.robotic.dlr.de/repos/f_soft_src/robotkernel/trunk/src/modules/posix_timer rev:  43477
+  * creating svn directory 'https://rmsvn01.robotic.dlr.de/software/robotkernel/src/module-posix-timer/trunk' [rmpm admintool (burger_r, 2014-08-01-08-56-06)]
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 1 Aug 2014 07:08:27 +0000
+
