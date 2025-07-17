@@ -1,5 +1,5 @@
 Source: module-posix-timer
-Section: robotkernel, embedded
+Section: embedded
 Priority: optional
 Maintainer: Robert Burger <robert.burger@dlr.de>
 Build-Depends: debhelper-compat (= 13), robotkernel-dev (>=6), service-provider-process-data-inspection-dev (>=6)
