@@ -78,7 +78,7 @@ void timer_base::init(void) {
     // register process_data
     robotkernel::add_device(pdin);
 
-    pdin_inspect = make_shared<service_provider_process_data_inspection::pd_inspection>(name, "inputs", pdin);
+    pdin_inspect = make_shared<service_provider_process_data_inspection::pd_inspection>(parent->name, name + string(".inputs"), pdin);
     robotkernel::add_device(pdin_inspect);
 }
 
