@@ -1,10 +1,24 @@
-The module **libmodule_posix_timer.so** is used to generate deterministic triggers for other modules.
+# module_posix_timer
 
-# Functional principle 
+[![Build and Publish Debian Package](https://github.com/robotkernel-hal/module_posix_timer/actions/workflows/build-deb.yaml/badge.svg)](https://github.com/robotkernel-hal/module_posix_timer/actions/workflows/build-deb.yaml)
+[![License: LGPL-V3](https://img.shields.io/badge/license-LGPL--V3-green.svg)](LICENSE)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](#)
+[![Debian](https://img.shields.io/badge/Debian-A81D33?logo=debian&logoColor=fff)](#)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?logo=ubuntu&logoColor=white)](#)
 
-The posix timer module supports three different modes. 
+**Robotkernel handler module for POSIX timer integration**
 
-## Modes
+`module_posix_timer` provides a high‑priority timing mechanism based on POSIX timers for the robotkernel HAL. It abstracts timer setup and notification logic to deliver accurate periodic triggers within the robotkernel execution cycle.
+
+---
+
+## ✨ Features
+
+- High‑resolution periodic timer 
+- Real‑time safe execution 
+- Integrates seamlessly with robotkernel event loop
+- Adjustable timer frequency at runtime
+- Optional callback hooks for custom application logic
 
 Three different modes are supported by **module_posix_timer**.
 
@@ -12,10 +26,22 @@ Three different modes are supported by **module_posix_timer**.
 * ***posix_timer :*** This mode creates a timer with timer_create. It configures the timer and connects it to the given signal number from the configuration string. 
 * ***busywait :*** In busywait the timer threads does active wait on the cpu and consumes all cpu time. This can cause higher power consumption and higher temperature (But on a PREEMPT-RT system that should not matter). 
 
-## Example config file
+---
+
+## 🧩 Configuration
+
+Use the following snippet in your Robotkernel handler configuration:
+
+`main.rkc`
+```yaml
+name: posix_timer
+so_file: libmodule_posix_timer.so
+config: !include timer_0.rkc
+```
 
 This example config file can be used as a template for own configurations.
 
+`timer_0.rkc`
 ```yaml
 # Configuration file for module_posix_timer.
 #
@@ -57,8 +83,22 @@ timers:
     # "strict" - skip all ticks which ly in the past.
     #skip_missed: none 
 ```
+| Parameter         | Description |
+|-------------------|-------------|
+| `interval_sec`    | Whole seconds interval between timer triggers |
+| `interval_nsec`   | Nanoseconds interval (0–999,999,999) |
+| `use_eventfd`     | If `true` uses `eventfd`; otherwise signal-based notifications |
+| `dependencies`    | Other required modules (e.g. `ecat` for synchronized looping) |
 
-## Trigger device
+---
+
+## ⚙️ Runtime Behavior
+
+- Timer initialized during module startup
+- On each timer expiry:
+  - Emits a HAL event or counter signal
+  - Invokes optional callbacks for downstream modules
+- Supports dynamic interval adjustment at runtime
 
 This module registers a trigger device for each timer to robotkernel with the following naming schemeː
 
@@ -66,10 +106,68 @@ This module registers a trigger device for each timer to robotkernel with the fo
 <module_name>.<timer_name>.trigger
 ```
 
-## Process data device
-
 The module also provides a cyclic process. It contains the actual timer interval.
 
 ```
 <module_name>.<timer_name>.inputs.pd
 ```
+
+---
+
+## 🖼️ Architecture Diagram
+
+```text
++-------------------+           +----------------------------+
+|   Robotkernel-5   |<--------->|   module_posix_timer.so    |
++-------------------+           +-------------+--------------+
+                                               |
+                                     +---------v---------+
+                                     | POSIX Timer API   |
+                                     | (timer_create)    |
+                                     +-------------------+
+```
+
+---
+
+## 📦 Build & Installation
+
+```bash
+git clone https://github.com/robotkernel-hal/module_posix_timer.git
+cd module_posix_timer
+mkdir build && cd build
+cmake ..
+make
+sudo make install
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+TODO
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions, pull requests, and issue reports are welcome. Please:
+
+- Keep builds warning-free
+- Stick to robotkernel style rules
+- Add tests for new features or regressions
+
+---
+
+## 📄 License
+
+Distributed under the **LGPL-V3 License**. Refer to the [LICENSE](LICENSE) file for details.
+
+---
+
+**Robotkernel HAL Project** – Real-time robotics infrastructure powered by modular, modern C++
+
+
+## Example config file
+
