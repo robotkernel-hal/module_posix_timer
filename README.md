@@ -91,7 +91,7 @@ timers:
 | `signo`     | Signal number to use in 'timer' mode |
 | `prio`    | Thread priority in 'nanosleep' or 'busywait' mode |
 | `affinity`    | Thread affinity in 'nanosleep' or 'busywait' mode |
-| `skip_missed` | Slip missed cycles or catch up. |
+| `skip_missed` | Skip missed cycles or catch up. |
 
 ---
 
