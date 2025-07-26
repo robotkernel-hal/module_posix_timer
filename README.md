@@ -169,5 +169,3 @@ Distributed under the **LGPL-V3 License**. Refer to the [LICENSE](LICENSE) file 
 **Robotkernel HAL Project** – Real-time robotics infrastructure powered by modular, modern C++
 
 
-## Example config file
-
