@@ -85,10 +85,11 @@ timers:
 ```
 | Parameter         | Description |
 |-------------------|-------------|
-| `interval_sec`    | Whole seconds interval between timer triggers |
-| `interval_nsec`   | Nanoseconds interval (0–999,999,999) |
-| `use_eventfd`     | If `true` uses `eventfd`; otherwise signal-based notifications |
-| `dependencies`    | Other required modules (e.g. `ecat` for synchronized looping) |
+| `interval`        | Seconds interval between timer triggers |
+| `mode`            | Timer mode e.g. 'timer', 'nanosleep' or 'busywait' |
+| `signo`     | Signal number to use in 'timer' mode |
+| `prio`    | Thread priority in 'nanosleep' or 'busywait' mode |
+| `affinity`    | Thread affinity in 'nanosleep' or 'busywait' |
 
 ---
 
