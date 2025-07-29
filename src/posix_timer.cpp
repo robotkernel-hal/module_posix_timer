@@ -172,7 +172,7 @@ void busywait::run() {
         trigger::do_trigger();
     }
 
-    parent->log(info, "busysleep handler stopped\n");
+    parent->log(info, "busywait handler stopped\n");
 }
 
 //! handler function for timer mode
