@@ -58,6 +58,7 @@ class timer_base :
     public:
         //! Construction
         timer_base(std::shared_ptr<posix_timer> parent, const YAML::Node& config);
+        ~timer_base() { }
 
         //! Initialize timer
         void init(void);
@@ -130,10 +131,12 @@ class posix_timer :
         posix_timer(const char *name, const YAML::Node& node);
 
         //! destrcution
-        ~posix_timer() {};
+        ~posix_timer() { };
 
         //! additional module init stuff
         virtual void init() override;
+        //! additional module deinit stuff
+        virtual void deinit() override { timers.clear(); };
 
         //*********************************************
         // STATE MACHINE FUNCTIONS
