@@ -1,6 +1,7 @@
 module-posix-timer (6.0.0~pre1) unstable; urgency=low
 
   * prep: 6.0.0
+  * update: debian docs
 
  -- Robert Burger <robert.burger@dlr.de>  Wed, 22 Jan 2025 10:29:08 +0100
 
