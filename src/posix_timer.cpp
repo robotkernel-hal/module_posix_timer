@@ -289,7 +289,8 @@ void posix_timer::init() {
                 timers.push_back(std::make_shared<busywait>(shared_from_this(), timer_config));
             }
         } else {
-            log(info, "mode not specified, assuming timer mode!\n");
+            log(info, "mode not specified, assuming nanosleep mode!\n");
+            timers.push_back(std::make_shared<nanosleep>(shared_from_this(), timer_config));
         }
     };
 
