@@ -66,7 +66,7 @@ timer_base::timer_base(std::shared_ptr<posix_timer> parent, const YAML::Node& co
 //! Initialize timer
 void timer_base::init(void) {
     // add trigger device
-    robotkernel::add_device(shared_from_this());
+    robotkernel::add_device(shared_from_this_as<trigger>());
 
     string pdin_desc = "- double: interval\n";
     pdin = make_shared<robotkernel::triple_buffer>(
@@ -88,7 +88,7 @@ void timer_base::deinit(void) {
     pdin_inspect = nullptr;
 
     // register devices (trigger, process_data)
-    robotkernel::remove_device(shared_from_this());
+    robotkernel::remove_device(shared_from_this_as<trigger>());
     robotkernel::remove_device(pdin);
 
     pdin->reset_provider(prov);
@@ -282,15 +282,15 @@ void posix_timer::init() {
     std::function<void(const YAML::Node& timer_config)> create_timer = [&](const YAML::Node& timer_config) { 
         if (timer_config["mode"]) {
             if (timer_config["mode"].as<string>() == string("nanosleep")) {
-                timers.push_back(std::make_shared<nanosleep>(shared_from_this(), timer_config));
+                timers.push_back(std::make_shared<nanosleep>(shared_from_this_as<posix_timer>(), timer_config));
             } else if (timer_config["mode"].as<string>() == string("timer")) {
-                timers.push_back(std::make_shared<timer>(shared_from_this(), timer_config));
+                timers.push_back(std::make_shared<timer>(shared_from_this_as<posix_timer>(), timer_config));
             } else if (timer_config["mode"].as<string>() == string("busywait")) {
-                timers.push_back(std::make_shared<busywait>(shared_from_this(), timer_config));
+                timers.push_back(std::make_shared<busywait>(shared_from_this_as<posix_timer>(), timer_config));
             }
         } else {
             log(info, "mode not specified, assuming nanosleep mode!\n");
-            timers.push_back(std::make_shared<nanosleep>(shared_from_this(), timer_config));
+            timers.push_back(std::make_shared<nanosleep>(shared_from_this_as<posix_timer>(), timer_config));
         }
     };
 

@@ -28,6 +28,7 @@
 #include "robotkernel/module_base.h"
 #include "robotkernel/robotkernel.h"
 #include "robotkernel/trigger_base.h"
+#include "robotkernel/helpers.h"
 
 #include "service_provider_process_data_inspection/base.h"
 
@@ -37,7 +38,7 @@ namespace module_posix_timer {
 class posix_timer;
 
 class timer_base : 
-    public std::enable_shared_from_this<timer_base>,
+    public virtual robotkernel::shared_base,
     public robotkernel::runnable,
     public robotkernel::trigger
 {
@@ -111,7 +112,7 @@ class timer : public timer_base {
 
 // forward declaration
 class posix_timer : 
-    public std::enable_shared_from_this<posix_timer>,
+    public virtual robotkernel::shared_base,
     public robotkernel::module_base
 {
     private:
