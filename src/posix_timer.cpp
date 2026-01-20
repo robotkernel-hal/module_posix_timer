@@ -41,6 +41,7 @@ using namespace std;
 using namespace std::chrono;
 
 using namespace robotkernel;
+using namespace robotkernel::helpers;
 using namespace module_posix_timer;
 
 //! Construction
