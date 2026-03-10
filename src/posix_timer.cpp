@@ -69,9 +69,9 @@ void timer_base::init(void) {
     // add trigger device
     robotkernel::add_device(shared_from_this_as<trigger>());
 
-    string pdin_desc = "- double: interval\n";
-    pdin = make_shared<robotkernel::triple_buffer>(
-            sizeof(double), parent->name, name + string(".inputs"), pdin_desc, trigger::id());
+    pd_inputs::register_definition();
+    pdin = make_shared<robotkernel::triple_buffer>(pd_inputs::size, parent->name, name + string(".inputs"), 
+            pd_inputs::definition_name, trigger::id());
 
     prov = make_shared<pd_provider>(name);
     pdin->set_provider(prov);

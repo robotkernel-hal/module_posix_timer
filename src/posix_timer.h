@@ -32,6 +32,8 @@
 
 #include "service_provider_process_data_inspection/base.h"
 
+#include "gen_definitions.h"
+
 namespace module_posix_timer {
 
 // forward declarations
