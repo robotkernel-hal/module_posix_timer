@@ -5,5 +5,5 @@ pkgconfig_DATA = module_posix_timer.pc
 
 install-exec-hook:
 	mkdir -p $(DESTDIR)$(prefix)/doc
-	cp -ru $(top_builddir)/doc/* $(DESTDIR)$(prefix)/doc
+	cp -ru $(top_srcdir)/doc/* $(DESTDIR)$(prefix)/doc
 
