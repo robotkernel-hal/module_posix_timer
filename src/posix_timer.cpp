@@ -104,6 +104,8 @@ void nanosleep::run() {
     auto now = std::chrono::high_resolution_clock::now();
     double interval = 0.;
 
+    trigger::reset_system_time_offset();
+
     while (running()) {
         interval = 1. / trigger::get_rate();
         now += std::chrono::nanoseconds((long)(1E9 * interval));
@@ -143,6 +145,8 @@ void busywait::run() {
 
     steady_clock::time_point next = steady_clock::now(), act;
     double interval = 0.;
+
+    trigger::reset_system_time_offset();
 
     while (running()) {
         interval = 1. / trigger::get_rate();
