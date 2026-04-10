@@ -102,22 +102,22 @@ void timer_base::deinit(void) {
 void nanosleep::run() {
     parent->log(info, "%s -> nanosleep handler running with pid %d\n", name.c_str(), getpid());
     auto now = std::chrono::high_resolution_clock::now();
-    pd_inputs::data local_inputs = {};
+    double interval = 0.;
 
     while (running()) {
-        local_inputs.interval = 1. / trigger::get_rate();
-        now += std::chrono::nanoseconds((long)(1E9 * local_inputs.interval));
+        interval = 1. / trigger::get_rate();
+        now += std::chrono::nanoseconds((long)(1E9 * interval));
 
         if (skip_missed != skip_none) {
             int skipped_cycles = 0;
             std::chrono::nanoseconds add_time = std::chrono::nanoseconds((long)0);
             if (skip_missed == skip_normal) {
-                add_time += std::chrono::nanoseconds((long)(1E9 * local_inputs.interval));
+                add_time += std::chrono::nanoseconds((long)(1E9 * interval));
             }
 
             while ((now + add_time) < std::chrono::high_resolution_clock::now()) {
                 skipped_cycles++;
-                now += std::chrono::nanoseconds((long)(1E9 * local_inputs.interval));
+                now += std::chrono::nanoseconds((long)(1E9 * interval));
             }
 
             if (skipped_cycles > 0) {
@@ -125,7 +125,7 @@ void nanosleep::run() {
             }
         }
 
-        pdin->write(prov, 0, (uint8_t *)&local_inputs, pd_inputs::size, true, false);
+        update_pdin(static_cast<uint64_t>(interval * 1E9));
 
         do {
             std::this_thread::sleep_until(now);
@@ -165,7 +165,7 @@ void busywait::run() {
             }
         }
 
-        pdin->write(prov, 0, (uint8_t *)&interval, sizeof(interval), true, false);
+        update_pdin(static_cast<uint64_t>(interval * 1E9));
 
         do {
             act = steady_clock::now();
