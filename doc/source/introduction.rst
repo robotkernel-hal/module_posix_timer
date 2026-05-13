@@ -8,8 +8,9 @@ module_posix_timer provides a high‑priority timing mechanism based on POSIX
 timers for the robotkernel HAL. It abstracts timer setup and notification logic 
 to deliver accurate periodic triggers within the robotkernel execution cycle.
 
+========
 Features
-________
+========
 
 - High‑resolution periodic timer
 - Real‑time safe execution

@@ -1,5 +1,2 @@
-.. toctree::
-   :maxdepth: 3
-
-   introduction
-   configuration
+.. include:: introduction.rst
+.. include:: configuration.rst
