@@ -4,12 +4,14 @@
    contain the root `toctree` directive.
 
 Welcome to module_posix_timer's documentation!
-=======================================
+==============================================
 
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
    :numbered:
+
+    main
 
 Indices and tables
 ==================
