@@ -2,7 +2,7 @@
 Introduction
 ============
 
-Robotkernel handler module for POSIX timer integration
+Robotkernel handler module for POSIX timer integration.
 
 module_posix_timer provides a high‑priority timing mechanism based on POSIX 
 timers for the robotkernel HAL. It abstracts timer setup and notification logic 
