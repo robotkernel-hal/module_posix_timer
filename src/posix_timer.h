@@ -76,6 +76,15 @@ class timer_base :
          * \param new_rate new trigger rate to set
          */
         virtual void set_rate(double new_rate) override { rate = new_rate; }
+
+        void update_pdin(const uint64_t& interval) {
+            auto tmp_pdin_buf = reinterpret_cast<pd_inputs::data *>(pdin->next(prov));
+            tmp_pdin_buf->actual_interval_nsec = interval;
+            tmp_pdin_buf->initial_interval_nsec = trigger::get_initial_rate_nanoseconds();
+            tmp_pdin_buf->virtual_time_nsec = trigger::get_virtual_time_nanoseconds();
+            tmp_pdin_buf->elapsed_time_nsec = trigger::get_elapsed_nanoseconds().count();
+            pdin->push(prov, false);
+        }
 };
 
 //! Handler to wait with nanosleep.

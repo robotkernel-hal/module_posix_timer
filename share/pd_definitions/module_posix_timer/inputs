@@ -1,3 +1,7 @@
 pds:
   module_posix_timer/inputs:
-    interval: { type: double }
+    actual_interval_nsec: { type: uint64_t }
+    initial_interval_nsec: { type: uint64_t }
+    virtual_time_nsec: { type: uint64_t }
+    elapsed_time_nsec: { type: uint64_t }
+    
