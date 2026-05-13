@@ -11,7 +11,7 @@ Welcome to module_posix_timer's documentation!
    :caption: Contents:
    :numbered:
 
-    main
+   main
 
 Indices and tables
 ==================
