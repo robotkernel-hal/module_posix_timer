@@ -4,6 +4,7 @@ _: &build_configs
 builds:
   - context: conan
     build_file: share/pd_definitions/conanfile.py
+    test_package: None
     configurations: *build_configs
   - context: conan
     build_file: conanfile.py
