@@ -73,7 +73,7 @@ void timer_base::init(void) {
     pdin = make_shared<robotkernel::triple_buffer>(pd_inputs::size, parent->name, name + string(".inputs"), 
             pd_inputs::definition_name, trigger::id());
 
-    prov = make_shared<pd_provider>(name);
+    prov = make_shared<pd_provider>(string_printf("%s.%s.inputs", parent->name.c_str(), name.c_str()));
     pdin->set_provider(prov);
 
     // register process_data
@@ -100,7 +100,7 @@ void timer_base::deinit(void) {
 
 //! handler function for nanosleep mode
 void nanosleep::run() {
-    parent->log(info, "%s -> nanosleep handler running with pid %d\n", name.c_str(), getpid());
+    parent->log(info, "event=run timer_name=%s mode=nanosleep pid=%d message=\"thread started\"\n", name.c_str(), getpid());
     auto now = std::chrono::high_resolution_clock::now();
     double interval = 0.;
 
@@ -123,7 +123,7 @@ void nanosleep::run() {
             }
 
             if (skipped_cycles > 0) {
-                parent->log(warning, "%s -> skipped %d cylces!\n", name.c_str(), skipped_cycles);
+                parent->log(warning, "event=run timer_name=%s mode=nanosleep skipped_cycles=%d\n", name.c_str(), skipped_cycles);
             }
         }
 
@@ -136,12 +136,12 @@ void nanosleep::run() {
         trigger::do_trigger();
     }
 
-    parent->log(info, "%s -> nanosleep handler stopped\n", name.c_str());
+    parent->log(info, "event=run timer_name=%s mode=nanosleep message=\"thread stopped\"\n", name.c_str());
 }
 
 //! handler function for nanosleep mode
 void busywait::run() {
-    parent->log(info, "busywait handler running with pid %d\n", getpid());
+    parent->log(info, "event=run timer_name=%s mode=busywait pid=%d message=\"thread started\"\n", name.c_str(), getpid());
 
     steady_clock::time_point next = steady_clock::now(), act;
     double interval = 0.;
@@ -165,7 +165,7 @@ void busywait::run() {
             }
 
             if (skipped_cycles > 0) {
-                parent->log(warning, "skipped %d cylces!\n", skipped_cycles);
+                parent->log(warning, "event=run timer_name=%s mode=busywait skipped_cycles=%d\n", name.c_str(), skipped_cycles);
             }
         }
 
@@ -177,13 +177,13 @@ void busywait::run() {
 
         trigger::do_trigger();
     }
-
-    parent->log(info, "busywait handler stopped\n");
+    
+    parent->log(info, "event=run timer_name=%s mode=busywait message=\"thread stopped\"\n", name.c_str());
 }
 
 //! handler function for timer mode
 void timer::run() {
-    parent->log(info, "timer handler running with pid %d\n", getpid());
+    parent->log(info, "event=run timer_name=%s mode=timer pid=%d message=\"thread started\"\n", name.c_str(),  getpid());
     
     sigset_t set;
     if (sigemptyset (&set) == -1)
@@ -199,7 +199,7 @@ void timer::run() {
     se.sigev_signo = signo;
 
     if (timer_create(CLOCK_REALTIME, &se, &timer_id) == -1) {
-        parent->log(error, "ERROR timer_create: %s\n", strerror(errno));
+        parent->log(error, "event=run timer_name=%s mode=timer error_message=\"timer_create: %s\"\n", name.c_str(), strerror(errno));
     }
 
     double interval = 1. / get_rate();
@@ -216,7 +216,7 @@ void timer::run() {
     value.it_interval.tv_nsec = value.it_value.tv_nsec;
 
     if (timer_settime(timer_id, 0, &value, &value_old) == -1) {
-        parent->log(error, "timer_settime %s\n", strerror(errno));
+        parent->log(error, "event=run timer_name=%s mode=timer error_message=\"timer_settime: %s\"\n", name.c_str(), strerror(errno));
     }
 
     while (running()) {
@@ -227,9 +227,9 @@ void timer::run() {
 
         if (ret == -1) {
             if (errno == EAGAIN) {
-                parent->log(info, "sigtimedwait timed out\n");
+                parent->log(info, "event=run timer_name=%s mode=timer message=\"sigtimedwait timed out\"\n");
             } if (errno == EINVAL) {
-                parent->log(info, "sigtimedwait einval\n");
+                parent->log(info, "event=run timer_name=%s mode=timer message=\"sigtimedwait einval\"\n");
             }
             continue;
         }
@@ -264,13 +264,13 @@ void timer::run() {
         value.it_interval.tv_nsec = 0;
 
         if (timer_settime(timer_id, 0, &value, NULL) == -1) {
-            parent->log(error, "ERROR timer_settime: %s\n", strerror(errno));
+            parent->log(error, "event=run timer_name=%s mode=timer error_message=\"timer_settime: %s\"\n", name.c_str(), strerror(errno));
         }
 
         timer_delete(timer_id);
     }
 
-    parent->log(info, "timer handler stopped\n");
+    parent->log(info, "event=run timer_name=%s mode=timer message=\"thread stopped\"\n", name.c_str());
 }
 
 //! default construction
@@ -295,7 +295,7 @@ void posix_timer::init() {
                 timers.push_back(std::make_shared<busywait>(shared_from_this_as<posix_timer>(), timer_config));
             }
         } else {
-            log(info, "mode not specified, assuming nanosleep mode!\n");
+            log(info, "event=init timer_name=%s message=\"mode not specified, assuming nanosleep mode!\"\n", name.c_str());
             timers.push_back(std::make_shared<nanosleep>(shared_from_this_as<posix_timer>(), timer_config));
         }
     };
