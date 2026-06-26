@@ -12,13 +12,15 @@
 # package maintainers to append LDFLAGS
 #export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
+INSTALL_PREFIX:=/usr/share/robotkernel
+
 %:
 	dh $@
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
-		--libdir=/usr/share/robotkernel/lib
-		--prefix=/usr/share/robotkernel
+		--libdir=$(INSTALL_PREFIX)/lib \
+		--prefix=$(INSTALL_PREFIX)
 
 override_dh_builddeb:
 	dh_builddeb -- -Zgzip
