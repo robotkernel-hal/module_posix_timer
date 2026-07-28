@@ -1,3 +1,12 @@
+module-posix-timer (6.0.1) stable; urgency=low
+
+  * change: new log message format
+  * github: build also on trixie
+  * debian: fix dh_auto_configure
+  * debian: installing to /usr/share/robotkernel
+
+ -- Robert Burger <robert.burger@dlr.de>  Fri, 26 Jun 2026 12:34:44 +0200
+
 module-posix-timer (6.0.0) stable; urgency=low
 
   * prep: 6.0.0
